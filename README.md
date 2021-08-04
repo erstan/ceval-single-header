@@ -46,15 +46,8 @@ The comma `,` operator is also implemented. It returns the value of it's right-m
 
 e.g; `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(PI/2,PI/3,PI)` would return `cos(PI)` i.e, `-1`
 
-## Installation
-```shell
-git clone https://github.com/e-t-sudo/ceval.git /tmp/ceval && \
-cd /tmp/ceval && \
-sudo make install
-```
-
 ## Usage
-After the installation, just include the ceval library using `#include<ceval/ceval.h>` directive in your C/C++ project. 
+Include the ceval library using the `#include "PATH_TO_CEVAL.H"` directive your C/C++ project. 
 
 The code snippet given below is a console based interpreter that interactively takes in math expressions from stdin, and prints out their parse trees and results. 
 
