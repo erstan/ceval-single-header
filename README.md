@@ -48,7 +48,7 @@ e.g; `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(PI/2,PI/3,PI)
 
 ## Installation
 ```shell
-git clone https://github.com/e-t-sudo/ceval.git /tmp/ceval && \
+git clone https://github.com/e-t-sudo/ceval-single-header.git /tmp/ceval && \
 cd /tmp/ceval && \
 sudo make install
 ```
