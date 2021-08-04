@@ -56,7 +56,7 @@ The code snippet given below is a console based interpreter that interactively t
 #include<stdio.h>
 #include<stdlib.h>
 
-#include<ceval/ceval.h>
+#include "ceval.h"
 
 int main(int argc, char ** argv) {
   char expr[100];
