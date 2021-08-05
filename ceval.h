@@ -21,6 +21,7 @@ typedef enum ceval_node_id {
   CEVAL_SIN, CEVAL_COS, CEVAL_TAN, CEVAL_ASIN, CEVAL_ACOS, CEVAL_ATAN, CEVAL_SINH, CEVAL_COSH, CEVAL_TANH,
   CEVAL_DEG2RAD, CEVAL_RAD2DEG,
   CEVAL_SIGNUM,
+  CEVAL_SCI2DEC,
   CEVAL_LESSER, CEVAL_GREATER, CEVAL_LESSER_S, CEVAL_GREATER_S,
   CEVAL_EQUAL, CEVAL_NOTEQUAL,
   CEVAL_NUMBER
@@ -37,6 +38,7 @@ const char * ceval_token_symbol[] = {
   "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh",
   "deg2rad", "rad2deg", 
   "signum",
+  "e",
   "<=", ">=", "<", ">", 
   "==", "!=",
   " "
@@ -53,6 +55,7 @@ const double ceval_precedence[] = {
   7, 7, 7, 7, 7, 7, 7, 7, 7,
   7, 7,
   7,
+  9,
   1.2, 1.2, 1.2, 1.2,
   1.1, 1.1,
   10
@@ -97,7 +100,6 @@ typedef struct ceval_node {
   double number;
   struct ceval_node * left, * right, * parent;
 } ceval_node;
-
 #ifdef __cplusplus
   #define CEVAL_CXX
   #include<iostream>
@@ -169,6 +171,7 @@ double ceval_greater_s(double, double, int);
 double ceval_comma(double, double, int);
 double ceval_power(double, double, int);
 double ceval_atan2(double, double, int);
+double ceval_sci2dec(double, double, int);
 
 //helper function definitions
 void ceval_error(const char * error) {
@@ -314,8 +317,6 @@ double ceval_cosh(double x) {
 double ceval_tanh(double x) {
   return tanh(x);
 }
-
-//double argument function definitions
 //double argument function definitions
 double (*double_arg_fun[]) (double, double, int) = {
   NULL,
@@ -329,6 +330,7 @@ double (*double_arg_fun[]) (double, double, int) = {
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
   NULL, NULL, 
   NULL, 
+  ceval_sci2dec,
   ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
   ceval_are_equal, ceval_not_equal,
   NULL
@@ -489,6 +491,9 @@ double ceval_atan2(double x, double y, int arg_check) {
   }
   return atan2(x, y);
 }
+double ceval_sci2dec(double m, double e, int arg_check) {
+  return (double)m*ceval_power(10, e, 0);
+}
 
 /************************************************************************************/
 void * ceval_make_tree(char *);
@@ -613,8 +618,8 @@ void * ceval_make_tree(char * expression) {
           return NULL;
         }
       }
-    } else if (!memcmp(expression - 1, "pi", 2)) {
-      expression = expression + (2 - 1);
+    } else if (!memcmp(expression - 1, "_pi", 3)) {
+      expression = expression + (3 - 1);
       node.id = CEVAL_NUMBER;
       node.pre = ceval_precedence[node.id];
       node.number = CEVAL_CONST_PI;
@@ -622,11 +627,15 @@ void * ceval_make_tree(char * expression) {
       expression = expression + (3 - 1);
       node.id = CEVAL_EXP;
       node.pre = ceval_precedence[node.id];
-    } else if (!memcmp(expression - 1, "e", 1)) {
-      expression = expression + (1 - 1);
+    } else if (!memcmp(expression - 1, "_e", 2)) {
+      expression = expression + (2 - 1);
       node.id = CEVAL_NUMBER;
       node.pre = ceval_precedence[node.id];
       node.number = CEVAL_CONST_E;
+    } else if (!memcmp(expression - 1, "e", 1)) {
+      expression = expression + (1 - 1);
+      node.id = CEVAL_SCI2DEC;
+      node.pre = ceval_precedence[node.id];
     } else if (!memcmp(expression - 1, "abs", 3)) {
       expression = expression + (3 - 1);
       node.id = CEVAL_ABS;
@@ -825,7 +834,7 @@ double ceval_evaluate_tree_(const ceval_node * node) {
   case CEVAL_ATAN2: case CEVAL_GCD: case CEVAL_HCF: case CEVAL_LCM: case CEVAL_LOG:
   case CEVAL_LESSER: case CEVAL_LESSER_S: case CEVAL_GREATER: case CEVAL_GREATER_S:
   case CEVAL_EQUAL: case CEVAL_NOTEQUAL:
-  case CEVAL_COMMA:
+  case CEVAL_COMMA: case CEVAL_SCI2DEC:
     if(node->left == NULL) {
       return (*double_arg_fun[node->id])(left, right, -1);
     } else if (node->right == NULL) {

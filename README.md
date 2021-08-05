@@ -38,13 +38,18 @@ Any valid combination of the following operators and functions, with floating po
 
 * Pre-defined math constants
 
-`PI`, `E`
+`_pi`, `_e`
+...pre-defined constants are prefixed with an underscore
 
-* The `,` operator
+* Other operators
 
-The comma `,` operator is also implemented. It returns the value of it's right-most operand. 
+  * `,` (Comma operator)
+  Ex: `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(_pi/2,_pi/3,_pi)` would return `cos(_pi)` i.e, `-1`
+  * `e` (e-operator for scientific notation)
+  Using the binary `e` operator, we can use scientific notation in our arithmetic expressions
+  Ex: `0.0314` could be written as `3.14e-2`; `1230000` could be subsituted by `1.23e6`
 
-e.g; `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(PI/2,PI/3,PI)` would return `cos(PI)` i.e, `-1`
+
 
 ## Usage
 Include the ceval library using the `#include "PATH_TO_CEVAL.H"` directive your C/C++ project. 
@@ -99,7 +104,7 @@ In = (3.2+2.8)/2
 Out = 3.000000
 
 
-In = E^PI>PI^E
+In = _e^_pi>_pi^_e
                 2.72
         ^
                 3.14
@@ -137,7 +142,7 @@ In = 2*2.0+1.4
 Out = 5.400000
 
 
-In = (5/4+3*-5)+(sin(PI))^2+(cos(PI))^2
+In = (5/4+3*-5)+(sin(_pi))^2+(cos(_pi))^2
                 2
         ^
                         3.14
@@ -205,7 +210,7 @@ In = (2+3/3+(3+9.7))
 Out = 15.700000
 
 
-In = sin(pi/2)+cos(pi/2)+tan(pi/2)
+In = sin(_pi/2)+cos(_pi/2)+tan(_pi/2)
                         2
                 /
                         3.14
@@ -221,7 +226,7 @@ In = sin(pi/2)+cos(pi/2)+tan(pi/2)
                                 3.14
                 sin
 
-[ceval]: tan() is not defined for odd-integral multiples of pi/2
+[ceval]: tan() is not defined for odd-integral multiples of _pi/2
 
 Out = nan
 
@@ -239,3 +244,10 @@ In = exit
 ... Program finished with exit code 0
 
 ```
+## Note
+When the `ceval.h` file is included in a C-program, you might require the `-lm` flag to link `math.h`
+
+```shell
+gcc file.c -lm 
+```
+
