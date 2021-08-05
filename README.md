@@ -1,6 +1,8 @@
 # ceval
 A C/C++ header for parsing and evaluation of arithmetic expressions.
-[README file identical to that of  <a href="https://github.com/e-t-sudo/ceval#readme">ceval</a> library]
+
+[README file is almost identical to that of the <a href="https://github.com/e-t-sudo/ceval#readme">ceval</a> library]
+
 ## Functions accessibe from main()
 <table>
 <thead><th>Function</th><th>Argument(s)</th><th>Return Value</th></thead>
@@ -39,15 +41,21 @@ Any valid combination of the following operators and functions, with floating po
 * Pre-defined math constants
 
 `_pi`, `_e`
+
 ...pre-defined constants are prefixed with an underscore
 
 * Other operators
 
   * `,` (Comma operator)
+
   Comma operator returns the result of it's rightmost operand
+  
   Ex: `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(_pi/2,_pi/3,_pi)` would return `cos(_pi)` i.e, `-1`
+  
   * `e` (e-operator for scientific notation)
+  
   Using the binary `e` operator, we can use scientific notation in our arithmetic expressions
+  
   Ex: `0.0314` could be written as `3.14e-2`; `1230000` could be subsituted by `1.23e6`
 
 
