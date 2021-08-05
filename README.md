@@ -44,6 +44,7 @@ Any valid combination of the following operators and functions, with floating po
 * Other operators
 
   * `,` (Comma operator)
+  Comma operator returns the result of it's rightmost operand
   Ex: `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(_pi/2,_pi/3,_pi)` would return `cos(_pi)` i.e, `-1`
   * `e` (e-operator for scientific notation)
   Using the binary `e` operator, we can use scientific notation in our arithmetic expressions
