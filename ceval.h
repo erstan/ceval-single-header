@@ -24,6 +24,8 @@ typedef enum ceval_node_id {
     CEVAL_SCI2DEC,
     CEVAL_LESSER, CEVAL_GREATER, CEVAL_LESSER_S, CEVAL_GREATER_S,
     CEVAL_EQUAL, CEVAL_NOTEQUAL,
+    CEVAL_AND, CEVAL_OR,
+    CEVAL_NOT,
     CEVAL_NUMBER,
     CEVAL_CONST_PI,
     CEVAL_CONST_E
@@ -76,7 +78,7 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_INT, "int", 5, CEVAL_UNARY_FUNCTION },
     { CEVAL_FRAC, "frac", 5, CEVAL_UNARY_FUNCTION },
     { CEVAL_NOTEQUAL, "!=", 1.1 , CEVAL_BINARY_OPERATOR }, //!= before !
-    { CEVAL_FACTORIAL, "!", 6, CEVAL_UNARY_OPERATOR }, 
+    { CEVAL_FACTORIAL, "fact", 7, CEVAL_UNARY_FUNCTION }, 
     { CEVAL_SINH, "sinh", 7, CEVAL_UNARY_FUNCTION }, //hyperbolics before trig functions
     { CEVAL_COSH, "cosh", 7, CEVAL_UNARY_FUNCTION },
     { CEVAL_TANH, "tanh", 7, CEVAL_UNARY_FUNCTION },
@@ -95,6 +97,9 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_LESSER_S, "<", 1.2 , CEVAL_BINARY_OPERATOR },
     { CEVAL_GREATER_S, ">", 1.2 , CEVAL_BINARY_OPERATOR },
     { CEVAL_EQUAL, "==", 1.1 , CEVAL_BINARY_OPERATOR },
+    { CEVAL_AND, "&&", 1.02, CEVAL_BINARY_OPERATOR },
+    { CEVAL_OR, "||", 1.01, CEVAL_BINARY_OPERATOR },
+    { CEVAL_NOT, "!", 5, CEVAL_UNARY_FUNCTION},
     { CEVAL_NUMBER, "0", 10, CEVAL_OTHER },
     { CEVAL_NUMBER, "1", 10, CEVAL_OTHER },
     { CEVAL_NUMBER, "2", 10, CEVAL_OTHER },
@@ -208,6 +213,7 @@ double ceval_sqrt(double);
 double ceval_cbrt(double);
 double ceval_ceil(double);
 double ceval_floor(double);
+double ceval_not(double);
 
 //double argument function prototypes
 double ceval_sum(double, double, int);
@@ -230,6 +236,8 @@ double ceval_comma(double, double, int);
 double ceval_power(double, double, int);
 double ceval_atan2(double, double, int);
 double ceval_sci2dec(double, double, int);
+double ceval_and(double, double, int);
+double ceval_or(double, double, int);
 
 //helper function definitions
 void ceval_error(const char * error) {
@@ -264,14 +272,18 @@ double( * single_arg_fun[])(double) = {
     ceval_positive_sign, ceval_negative_sign, 
     NULL, NULL,
     NULL, NULL, NULL, NULL,
-    ceval_abs, NULL, ceval_exp, ceval_sqrt, ceval_cbrt, ceval_ln, ceval_log10, ceval_ceil, ceval_floor, NULL, NULL, NULL, NULL, NULL, NULL, ceval_int_part, ceval_frac_part,
-    ceval_factorial,
+    ceval_abs, NULL, ceval_exp, ceval_sqrt, ceval_cbrt, ceval_ln, ceval_log10, ceval_ceil, ceval_floor, NULL, NULL, NULL, NULL, NULL, NULL, ceval_int_part, ceval_frac_part, ceval_factorial,
     ceval_sin, ceval_cos, ceval_tan, ceval_asin, ceval_acos, ceval_atan, ceval_sinh, ceval_cosh, ceval_tanh,
     ceval_deg2rad, ceval_rad2deg, 
     ceval_signum,
     NULL, NULL, NULL, NULL,
     NULL, NULL,
-    NULL
+    NULL,
+    NULL, NULL,
+    ceval_not,
+    NULL,
+    NULL,
+    NULL,
 };
 double ceval_signum(double x) {
     return (x == 0) ? 0 :
@@ -378,6 +390,9 @@ double ceval_cosh(double x) {
 double ceval_tanh(double x) {
     return tanh(x);
 }
+double ceval_not(double x) {
+    return !x;
+}
 
 //double argument function definitions
 double( * double_arg_fun[])(double, double, int) = {
@@ -387,14 +402,16 @@ double( * double_arg_fun[])(double, double, int) = {
     NULL, NULL,
     ceval_sum, ceval_diff,
     ceval_prod, ceval_div, ceval_modulus, ceval_quotient,
-    NULL, ceval_power, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ceval_power, ceval_atan2, ceval_gcd, ceval_hcf, ceval_lcm, ceval_log, NULL, NULL, 
-    NULL,
+    NULL, ceval_power, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ceval_power, ceval_atan2, ceval_gcd, ceval_hcf, ceval_lcm, ceval_log, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 
     NULL, 
     ceval_sci2dec,
     ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
     ceval_are_equal, ceval_not_equal,
+    ceval_and, ceval_or,
+    NULL,
+    NULL, 
     NULL
 };
 double ceval_sum(double a, double b, int arg_check) {
@@ -556,6 +573,12 @@ double ceval_atan2(double x, double y, int arg_check) {
 double ceval_sci2dec(double m, double e, int arg_check) {
     return (double) m * ceval_power(10, e, 0);
 }
+double ceval_and(double x, double y, int arg_check) {
+    return (double) x && y;
+}
+double ceval_or(double x, double y, int arg_check) {
+    return (double) x || y;
+}
 
 /************************************************************************************/
 void * ceval_make_tree(char * );
@@ -656,9 +679,8 @@ void * ceval_make_tree(char * expression) {
                 if (previous_id == CEVAL_NUMBER ||
                     previous_id == CEVAL_CONST_PI ||
                     previous_id == CEVAL_CONST_E ||
-                    previous_id == CEVAL_CLOSEPAR ||
-                    previous_id == CEVAL_FACTORIAL) {
-                    // other tokens (other than CEVAL_NUMBER, CEVAL_CLOSEPAR, CEVAL_FACTORIAL) are allowed only before '+'s or '-'s
+                    previous_id == CEVAL_CLOSEPAR) {
+                    // other tokens (other than CEVAL_NUMBER, CEVAL_CLOSEPAR) are allowed only before '+'s or '-'s
                     expression = expression + (len - 1);
                     node.id = token_found;
                     node.pre = ceval_token_prec(node.id);
@@ -759,7 +781,7 @@ double ceval_evaluate_tree_(const ceval_node * node) {
     right = ceval_evaluate_tree_(node -> right);
     switch (node -> id) {
 
-        //unary operators/functions
+        //unary-right operators/functions (operate on the expression to their right)
         case CEVAL_NEGSIGN:
         case CEVAL_POSSIGN:
         case CEVAL_EXP:
@@ -785,14 +807,14 @@ double ceval_evaluate_tree_(const ceval_node * node) {
         case CEVAL_INT:
         case CEVAL_FRAC:
         case CEVAL_FACTORIAL:
+        case CEVAL_NOT:
             if (node -> left == NULL) {
                 //operate on right operand
                 return ( * single_arg_fun[node -> id])(right);
-            } else if (node -> right == NULL) {
-                //operate on left operand(e.g; factorial())
-                return ( * single_arg_fun[node -> id])(left);
+            } else {
+                ceval_error("Missing operand(s)");
+                return NAN;
             }
-
         //binary operators/functions
         case CEVAL_PLUS:
         case CEVAL_MINUS:
@@ -815,6 +837,8 @@ double ceval_evaluate_tree_(const ceval_node * node) {
         case CEVAL_NOTEQUAL:
         case CEVAL_COMMA:
         case CEVAL_SCI2DEC:
+        case CEVAL_AND:
+        case CEVAL_OR:
             if (node -> left == NULL) {
                 return ( * double_arg_fun[node -> id])(left, right, -1);
             } else if (node -> right == NULL) {
