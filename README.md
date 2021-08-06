@@ -23,7 +23,7 @@ Any valid combination of the following operators and functions, with floating po
 
 * Arithematic operators
 
-`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `^` (exponentiation), `\` (quotient), `!` (factorial)
+`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `^` (exponentiation), `//` (quotient), `!` (factorial)
 * Relational operators
 
 `==` (equal), `!=` (not equal), `<` (strictly less), `>` (strictly greater), `<=` (less or equal), `>=` (greater or equal) to compare the results of two expressions
@@ -125,9 +125,9 @@ In = 5.4%2
 Out = 1.400000
 
 
-In = 5.4\2
+In = 5.4//2
         2
-\
+//
         5.40
 
 Out = 2.000000

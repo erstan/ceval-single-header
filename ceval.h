@@ -55,9 +55,9 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_POSSIGN, "+", 3, CEVAL_UNARY_OPERATOR }, 
     { CEVAL_NEGSIGN, "-", 3, CEVAL_UNARY_OPERATOR }, 
     { CEVAL_TIMES, "*", 4 , CEVAL_BINARY_OPERATOR },
+    { CEVAL_QUOTIENT, "//", 4 , CEVAL_BINARY_OPERATOR }, // '//' before '/'
     { CEVAL_DIVIDE, "/", 4 , CEVAL_BINARY_OPERATOR },
     { CEVAL_MODULO, "%", 4 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_QUOTIENT, "\\", 4 , CEVAL_BINARY_OPERATOR },
     { CEVAL_ABS, "abs", 5 , CEVAL_UNARY_FUNCTION },
     { CEVAL_POW, "^", 4.9 , CEVAL_BINARY_OPERATOR },
     { CEVAL_EXP, "exp", 5 , CEVAL_UNARY_FUNCTION }, //exp before e
@@ -148,11 +148,6 @@ double ceval_token_prec(ceval_node_id id) {
         }
     }
 }
-ceval_node_id ceval_singlechar_token_id(char token) {
-    char temp[2] = "\0";
-    temp[0] = token;
-    return ceval_token_id(temp);
-}
 typedef struct ceval_node {
     enum ceval_node_id id;
     double pre;
@@ -170,11 +165,14 @@ ceval_node;
 //constant definitions
 const float CEVAL_PI = M_PI;
 const float CEVAL_E = M_E;
-#ifndef EPSILON
-#define EPSILON 1e-2
+#ifndef CEVAL_EPSILON
+#define CEVAL_EPSILON 1e-2
 #endif
-#ifndef DELTA
-#define DELTA 1e-6
+#ifndef CEVAL_DELTA
+#define CEVAL_DELTA 1e-6
+#endif
+#ifndef CEVAL_MAX_DIGITS
+#define CEVAL_MAX_DIGITS 15
 #endif
 //these can be defined by the user before the include directive depending the desired level of precision
 
@@ -299,22 +297,22 @@ double ceval_atan(double x) {
 }
 double ceval_sin(double x) {
     double sin_val = sin(x);
-    //sin(pi) == 0.000000, but sin(pi-EPSILON) == -0.00000* and sin(pi+EPSILON) == +0.00000*
+    //sin(pi) == 0.000000, but sin(pi-CEVAL_EPSILON) == -0.00000* and sin(pi+CEVAL_EPSILON) == +0.00000*
     //since the precision of pi (approx) is limited, it often leads to -0.0000 printed out as a result
-    //thus, we assumse 0.0000 value for all |sin(x)|<=EPSILON
-    return (fabs(sin_val) <= EPSILON) ? 0 : sin_val;
+    //thus, we assumse 0.0000 value for all |sin(x)|<=CEVAL_EPSILON
+    return (fabs(sin_val) <= CEVAL_EPSILON) ? 0 : sin_val;
 }
 double ceval_cos(double x) {
     double cos_val = cos(x);
-    return (fabs(cos_val) <= EPSILON) ? 0 : cos_val;
+    return (fabs(cos_val) <= CEVAL_EPSILON) ? 0 : cos_val;
 }
 double ceval_tan(double x) {
     double tan_val = tan(x);
-    if (fabs(ceval_modulus(x - CEVAL_PI / 2, CEVAL_PI, 0)) <= DELTA) {
+    if (fabs(ceval_modulus(x - CEVAL_PI / 2, CEVAL_PI, 0)) <= CEVAL_DELTA) {
         ceval_error("tan() is not defined for odd-integral multiples of pi/2");
         return NAN;
     }
-    return (fabs(tan_val) <= EPSILON) ? 0 : tan_val;
+    return (fabs(tan_val) <= CEVAL_EPSILON) ? 0 : tan_val;
 }
 double ceval_rad2deg(double x) {
     return x / CEVAL_PI * 180;
@@ -493,7 +491,7 @@ double ceval_are_equal(double a, double b, int arg_check) {
         ceval_error("==: too few arguments provided");
         return NAN;
     }
-    if (fabs(a - b) <= EPSILON) {
+    if (fabs(a - b) <= CEVAL_EPSILON) {
         return 1;
     } else {
         return 0;
@@ -511,14 +509,14 @@ double ceval_lesser(double a, double b, int arg_check) {
         ceval_error("<=: too few arguments provided");
         return NAN;
     }
-    return (b - a) >= EPSILON;
+    return (b - a) >= CEVAL_EPSILON;
 }
 double ceval_greater(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error(">=: too few arguments provided");
         return NAN;
     }
-    return (a - b) >= EPSILON;
+    return (a - b) >= CEVAL_EPSILON;
 }
 double ceval_lesser_s(double a, double b, int arg_check) {
     if (arg_check) {
@@ -639,27 +637,6 @@ void * ceval_make_tree(char * expression) {
         char c = * expression++;
         isRightAssoc = (c == '^' || c == ')') ? 1 : 0;
         if (c == '\0') break;
-        else if (ceval_singlechar_token_id(c) == CEVAL_WHITESPACE) continue;
-        else if (c == '(' || c == ')') {
-            node.id = ceval_singlechar_token_id(c);
-            node.pre = ceval_token_prec(node.id);
-            goto END;
-        } else if (ceval_singlechar_token_id(c) == CEVAL_NUMBER) {
-            node.pre = ceval_token_prec(CEVAL_NUMBER);
-            int i;
-            char number[15];
-            for (i = 0; i + 1 < sizeof(number);) {
-                number[i++] = c;
-                c = * expression;
-                if (ceval_singlechar_token_id(c) == CEVAL_NUMBER || c == '.')
-                    expression++;
-                else break;
-            }
-            number[i] = '\0';
-            sscanf(number, "%lf", & node.number);
-            node.id = CEVAL_NUMBER;
-            goto END;
-        }
         int token_found = -1;
         char token[50];
         int len;
@@ -671,18 +648,23 @@ void * ceval_make_tree(char * expression) {
                 break;
             }
         }
+        // if token is found
         if (token_found > -1) {
+            // check if the token is a binary operator
             if (ceval_is_binary_opr(token_found)) {
+                // a binary operator must be preceded by a number, a numerical constant, a clospar, or a factorial
                 if (previous_id == CEVAL_NUMBER ||
                     previous_id == CEVAL_CONST_PI ||
                     previous_id == CEVAL_CONST_E ||
                     previous_id == CEVAL_CLOSEPAR ||
                     previous_id == CEVAL_FACTORIAL) {
-                    //other tokens (other than CEVAL_NUMBER, CEVAL_CLOSEPAR, CEVAL_FACTORIAL) are allowed only before '+'s or '-'s
+                    // other tokens (other than CEVAL_NUMBER, CEVAL_CLOSEPAR, CEVAL_FACTORIAL) are allowed only before '+'s or '-'s
                     expression = expression + (len - 1);
                     node.id = token_found;
                     node.pre = ceval_token_prec(node.id);
                 } else {
+                    // if the operator is not preceded by a number, a numerical constant, a closepar, or a factorial, then check if the 
+                    // character is a sign ('+' or '-')
                     if (c == '+') {
                         node.id = CEVAL_POSSIGN;
                         node.pre = ceval_token_prec(node.id);
@@ -690,11 +672,34 @@ void * ceval_make_tree(char * expression) {
                         node.id = CEVAL_NEGSIGN;
                         node.pre = ceval_token_prec(node.id);
                     } else {
+                        // if it is not a sign, then it must be a misplaced character
                         printf("[ceval]: Misplaced '%c' sign\n", c);
                         return NULL;
                     }
                 }
+            } else if (token_found == CEVAL_NUMBER){
+                // if the token is a number, then store it in an array
+                node.pre = ceval_token_prec(CEVAL_NUMBER);
+                int i;
+                char number[CEVAL_MAX_DIGITS];
+                for (i = 0; i + 1 < sizeof(number);) {
+                    number[i++] = c;
+                    c = * expression;
+                    if ('0' <= c && c <= '9' || c == '.')
+                        expression++;
+                    else 
+                        break;
+                }
+                number[i] = '\0';
+                //copy the contents of the number array at &node.number
+                sscanf(number, "%lf", & node.number);
+                node.id = CEVAL_NUMBER;
+                goto END;
+            } else if (token_found == CEVAL_WHITESPACE) {
+                // skip whitespace
+                continue;
             } else {
+                // for any other token
                 expression = expression + (len - 1);
                 node.id = token_found;
                 node.pre = ceval_token_prec(node.id);
@@ -703,6 +708,7 @@ void * ceval_make_tree(char * expression) {
                 }
             }
         } else {
+            // if the token is not found in the token table
             printf("[ceval]: Unknown token '%c'.\n", c);
             ceval_delete_tree(root.right);
             root.right = NULL;
@@ -745,45 +751,47 @@ double ceval_evaluate_tree_(const ceval_node * );
 double ceval_evaluate_tree(const void * );
 
 double ceval_evaluate_tree_(const ceval_node * node) {
-    if (!node) return 0;
+    if (!node) 
+        return 0;
+    
     double left, right;
     left = ceval_evaluate_tree_(node -> left);
     right = ceval_evaluate_tree_(node -> right);
     switch (node -> id) {
 
         //unary operators/functions
-    case CEVAL_NEGSIGN:
-    case CEVAL_POSSIGN:
-    case CEVAL_EXP:
-    case CEVAL_LN:
-    case CEVAL_LOG10:
-    case CEVAL_ABS:
-    case CEVAL_CEIL:
-    case CEVAL_FLOOR:
-    case CEVAL_SQRT:
-    case CEVAL_CBRT:
-    case CEVAL_SIN:
-    case CEVAL_COS:
-    case CEVAL_TAN:
-    case CEVAL_ASIN:
-    case CEVAL_ACOS:
-    case CEVAL_ATAN:
-    case CEVAL_SINH:
-    case CEVAL_COSH:
-    case CEVAL_TANH:
-    case CEVAL_DEG2RAD:
-    case CEVAL_RAD2DEG:
-    case CEVAL_SIGNUM:
-    case CEVAL_INT:
-    case CEVAL_FRAC:
-    case CEVAL_FACTORIAL:
-        if (node -> left == NULL) {
-            //operate on right operand
-            return ( * single_arg_fun[node -> id])(right);
-        } else if (node -> right == NULL) {
-            //operate on left operand(e.g; factorial())
-            return ( * single_arg_fun[node -> id])(left);
-        }
+        case CEVAL_NEGSIGN:
+        case CEVAL_POSSIGN:
+        case CEVAL_EXP:
+        case CEVAL_LN:
+        case CEVAL_LOG10:
+        case CEVAL_ABS:
+        case CEVAL_CEIL:
+        case CEVAL_FLOOR:
+        case CEVAL_SQRT:
+        case CEVAL_CBRT:
+        case CEVAL_SIN:
+        case CEVAL_COS:
+        case CEVAL_TAN:
+        case CEVAL_ASIN:
+        case CEVAL_ACOS:
+        case CEVAL_ATAN:
+        case CEVAL_SINH:
+        case CEVAL_COSH:
+        case CEVAL_TANH:
+        case CEVAL_DEG2RAD:
+        case CEVAL_RAD2DEG:
+        case CEVAL_SIGNUM:
+        case CEVAL_INT:
+        case CEVAL_FRAC:
+        case CEVAL_FACTORIAL:
+            if (node -> left == NULL) {
+                //operate on right operand
+                return ( * single_arg_fun[node -> id])(right);
+            } else if (node -> right == NULL) {
+                //operate on left operand(e.g; factorial())
+                return ( * single_arg_fun[node -> id])(left);
+            }
 
         //binary operators/functions
         case CEVAL_PLUS:
@@ -826,6 +834,7 @@ double ceval_evaluate_tree(const void * node) {
 // functions accessible from main() 
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
+// - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
 
 double ceval_result(char * expr) {
     void * tree = ceval_make_tree(expr);
