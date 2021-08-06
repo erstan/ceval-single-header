@@ -26,6 +26,9 @@ typedef enum ceval_node_id {
     CEVAL_EQUAL, CEVAL_NOTEQUAL,
     CEVAL_AND, CEVAL_OR,
     CEVAL_NOT,
+    CEVAL_BIT_AND,
+    CEVAL_BIT_XOR,
+    CEVAL_BIT_OR,
     CEVAL_NUMBER,
     CEVAL_CONST_PI,
     CEVAL_CONST_E
@@ -56,12 +59,12 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_MINUS, "-", 2 , CEVAL_BINARY_OPERATOR },
     { CEVAL_POSSIGN, "+", 3, CEVAL_UNARY_OPERATOR }, 
     { CEVAL_NEGSIGN, "-", 3, CEVAL_UNARY_OPERATOR }, 
+    { CEVAL_POW, "**", 4.9 , CEVAL_BINARY_OPERATOR }, // ** before *
     { CEVAL_TIMES, "*", 4 , CEVAL_BINARY_OPERATOR },
     { CEVAL_QUOTIENT, "//", 4 , CEVAL_BINARY_OPERATOR }, // '//' before '/'
     { CEVAL_DIVIDE, "/", 4 , CEVAL_BINARY_OPERATOR },
     { CEVAL_MODULO, "%", 4 , CEVAL_BINARY_OPERATOR },
     { CEVAL_ABS, "abs", 5 , CEVAL_UNARY_FUNCTION },
-    { CEVAL_POW, "^", 4.9 , CEVAL_BINARY_OPERATOR },
     { CEVAL_EXP, "exp", 5 , CEVAL_UNARY_FUNCTION }, //exp before e
     { CEVAL_SQRT, "sqrt", 5 , CEVAL_UNARY_FUNCTION },
     { CEVAL_CBRT, "cbrt", 5 , CEVAL_UNARY_FUNCTION },
@@ -100,6 +103,9 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_AND, "&&", 1.02, CEVAL_BINARY_OPERATOR },
     { CEVAL_OR, "||", 1.01, CEVAL_BINARY_OPERATOR },
     { CEVAL_NOT, "!", 5, CEVAL_UNARY_FUNCTION},
+    { CEVAL_BIT_AND, "&", 1.05, CEVAL_BINARY_OPERATOR},
+    { CEVAL_BIT_XOR, "^", 1.04, CEVAL_BINARY_OPERATOR},
+    { CEVAL_BIT_OR, "|", 1.03, CEVAL_BINARY_OPERATOR},
     { CEVAL_NUMBER, "0", 10, CEVAL_OTHER },
     { CEVAL_NUMBER, "1", 10, CEVAL_OTHER },
     { CEVAL_NUMBER, "2", 10, CEVAL_OTHER },
@@ -238,6 +244,9 @@ double ceval_atan2(double, double, int);
 double ceval_sci2dec(double, double, int);
 double ceval_and(double, double, int);
 double ceval_or(double, double, int);
+double ceval_bit_and(double, double, int);
+double ceval_bit_xor(double, double, int);
+double ceval_bit_or(double, double, int);
 
 //helper function definitions
 void ceval_error(const char * error) {
@@ -281,6 +290,9 @@ double( * single_arg_fun[])(double) = {
     NULL,
     NULL, NULL,
     ceval_not,
+    NULL,
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -410,6 +422,10 @@ double( * double_arg_fun[])(double, double, int) = {
     ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
     ceval_are_equal, ceval_not_equal,
     ceval_and, ceval_or,
+    NULL,
+    ceval_bit_and,
+    ceval_bit_xor,
+    ceval_bit_or,
     NULL,
     NULL, 
     NULL
@@ -571,13 +587,58 @@ double ceval_atan2(double x, double y, int arg_check) {
     return atan2(x, y);
 }
 double ceval_sci2dec(double m, double e, int arg_check) {
+    if (arg_check) {
+        ceval_error("atan2(): too few arguments provided");
+        return NAN;
+    }
     return (double) m * ceval_power(10, e, 0);
 }
 double ceval_and(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("and(): too few arguments provided");
+        return NAN;
+    }
     return (double) x && y;
 }
 double ceval_or(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("or(): too few arguments provided");
+        return NAN;
+    }
     return (double) x || y;
+}
+double ceval_bit_and(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("bit_and(): too few arguments provided");
+        return NAN;
+    }
+    if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
+        return (int)x & (int)y;
+    } else {
+        ceval_error("bit_and(): operands must be of integral type");
+    }
+}
+double ceval_bit_xor(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("bit_xor(): too few arguments provided");
+        return NAN;
+    }
+    if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
+        return (int)x ^ (int)y;
+    } else {
+        ceval_error("bit_xor(): operands must be of integral type");
+    }
+}
+double ceval_bit_or(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("bit_or(): too few arguments provided");
+        return NAN;
+    }
+    if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
+        return (int)x | (int)y;
+    } else {
+        ceval_error("bit_or(): operands must be of integral type");
+    }
 }
 
 /************************************************************************************/
@@ -839,6 +900,9 @@ double ceval_evaluate_tree_(const ceval_node * node) {
         case CEVAL_SCI2DEC:
         case CEVAL_AND:
         case CEVAL_OR:
+        case CEVAL_BIT_AND:
+        case CEVAL_BIT_XOR:
+        case CEVAL_BIT_OR:
             if (node -> left == NULL) {
                 return ( * double_arg_fun[node -> id])(left, right, -1);
             } else if (node -> right == NULL) {

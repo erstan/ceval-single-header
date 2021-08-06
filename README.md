@@ -25,7 +25,7 @@ Any valid combination of the following operators and functions, with floating po
 
 * Arithematic operators
 
-`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `^` (exponentiation), `//` (quotient)
+`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `**` (exponentiation), `//` (quotient)
 * Relational operators
 
 `==` (equal), `!=` (not equal), `<` (strictly less), `>` (strictly greater), `<=` (less or equal), `>=` (greater or equal) to compare the results of two expressions
@@ -46,6 +46,10 @@ Any valid combination of the following operators and functions, with floating po
 * Logical operators
 
 `&&`, `||` and `!`
+
+* Bitwise operators 
+
+`&`, `|`, `^`
 
 * Other operators
 
