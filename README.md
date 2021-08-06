@@ -25,14 +25,14 @@ Any valid combination of the following operators and functions, with floating po
 
 * Arithematic operators
 
-`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `^` (exponentiation), `//` (quotient), `!` (factorial)
+`+` (addition), `-` (subtraction), `*` (multiplication), `/` (division), `%` (modulo), `^` (exponentiation), `//` (quotient)
 * Relational operators
 
 `==` (equal), `!=` (not equal), `<` (strictly less), `>` (strictly greater), `<=` (less or equal), `>=` (greater or equal) to compare the results of two expressions
 
 * Single-argument functions
 
-`exp()`, `sqrt()`, `cbrt()`, `sin()`, `cos()`, `tan()`, `asin()`, `acos()`, `atan()`, `sinh()`, `cosh()`, `tanh()`, `abs()`, `ceil()`, `floor()`, `log10()`, `ln()`, `deg2rad()`, `rad2deg()`, `signum()`, `int()`, `frac()`
+`exp()`, `sqrt()`, `cbrt()`, `sin()`, `cos()`, `tan()`, `asin()`, `acos()`, `atan()`, `sinh()`, `cosh()`, `tanh()`, `abs()`, `ceil()`, `floor()`, `log10()`, `ln()`, `deg2rad()`, `rad2deg()`, `signum()`, `int()`, `frac()`, `fact()`
 
 * Two-argument functions
 
@@ -41,24 +41,20 @@ Any valid combination of the following operators and functions, with floating po
 * Pre-defined math constants
 
 `_pi`, `_e`
-
 ...pre-defined constants are prefixed with an underscore
+
+* Logical operators
+
+`&&`, `||` and `!`
 
 * Other operators
 
   * `,` (Comma operator)
-
   Comma operator returns the result of it's rightmost operand
-  
   Ex: `2,3` would give `3`; `4,3,0` would be equal to `0`; and `cos(_pi/2,_pi/3,_pi)` would return `cos(_pi)` i.e, `-1`
-  
   * `e` (e-operator for scientific notation)
-  
   Using the binary `e` operator, we can use scientific notation in our arithmetic expressions
-  
   Ex: `0.0314` could be written as `3.14e-2`; `1230000` could be subsituted by `1.23e6`
-
-
 
 ## Usage
 Include the ceval library using the `#include "PATH_TO_CEVAL.H"` directive your C/C++ project. 
