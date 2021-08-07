@@ -10,29 +10,75 @@
 #include<ctype.h>
 /*****************************************************************************************/
 typedef enum ceval_node_id {
-    CEVAL_WHITESPACE,
-    CEVAL_OPENPAR, CEVAL_CLOSEPAR,
-    CEVAL_COMMA,
-    CEVAL_POSSIGN, CEVAL_NEGSIGN,
-    CEVAL_PLUS, CEVAL_MINUS, 
-    CEVAL_TIMES, CEVAL_DIVIDE, CEVAL_MODULO, CEVAL_QUOTIENT,
-    CEVAL_ABS, CEVAL_POW, CEVAL_EXP, CEVAL_SQRT, CEVAL_CBRT, CEVAL_LN, CEVAL_LOG10, CEVAL_CEIL, CEVAL_FLOOR, CEVAL_POWFUN, CEVAL_ATAN2, CEVAL_GCD, CEVAL_HCF, CEVAL_LCM, CEVAL_LOG, CEVAL_INT, CEVAL_FRAC,
-    CEVAL_FACTORIAL,
-    CEVAL_SIN, CEVAL_COS, CEVAL_TAN, CEVAL_ASIN, CEVAL_ACOS, CEVAL_ATAN, CEVAL_SINH, CEVAL_COSH, CEVAL_TANH,
-    CEVAL_DEG2RAD, CEVAL_RAD2DEG,
-    CEVAL_SIGNUM,
-    CEVAL_SCI2DEC,
-    CEVAL_LESSER, CEVAL_GREATER, CEVAL_LESSER_S, CEVAL_GREATER_S,
-    CEVAL_EQUAL, CEVAL_NOTEQUAL,
-    CEVAL_AND, CEVAL_OR,
-    CEVAL_NOT,
-    CEVAL_BIT_AND,
-    CEVAL_BIT_XOR,
-    CEVAL_BIT_OR,
-    CEVAL_NUMBER,
-    CEVAL_CONST_PI,
-    CEVAL_CONST_E
+    CEVAL_WHITESPACE, CEVAL_OPENPAR, CEVAL_CLOSEPAR, CEVAL_COMMA, 
+    CEVAL_OR, CEVAL_AND, CEVAL_BIT_OR, CEVAL_BIT_XOR,
+    CEVAL_BIT_AND, CEVAL_EQUAL, CEVAL_NOTEQUAL,CEVAL_LESSER,
+    CEVAL_GREATER, CEVAL_LESSER_S, CEVAL_GREATER_S, CEVAL_BIT_LSHIFT, 
+    CEVAL_BIT_RSHIFT, CEVAL_PLUS, CEVAL_MINUS, CEVAL_TIMES, 
+    CEVAL_DIVIDE, CEVAL_MODULO, CEVAL_QUOTIENT, CEVAL_POW,
+    CEVAL_GCD, CEVAL_HCF, CEVAL_LCM, CEVAL_LOG,
+    CEVAL_ATAN2, CEVAL_SCI2DEC, CEVAL_POWFUN, 
+    CEVAL_ABS, CEVAL_EXP, CEVAL_SQRT,CEVAL_CBRT, 
+    CEVAL_LN, CEVAL_LOG10, CEVAL_CEIL, CEVAL_FLOOR, 
+    CEVAL_SIGNUM, CEVAL_FACTORIAL, CEVAL_INT, CEVAL_FRAC, 
+    CEVAL_DEG2RAD, CEVAL_RAD2DEG, CEVAL_SIN, CEVAL_COS, 
+    CEVAL_TAN, CEVAL_ASIN, CEVAL_ACOS, CEVAL_ATAN, 
+    CEVAL_SINH, CEVAL_COSH, CEVAL_TANH,CEVAL_NOT, 
+    CEVAL_BIT_NOT,CEVAL_POSSIGN, CEVAL_NEGSIGN, CEVAL_NUMBER,
+    CEVAL_CONST_PI, CEVAL_CONST_E
 } ceval_node_id;
+typedef enum ceval_token_prec_specifiers {
+// precedences :: <https://en.cppreference.com/w/cpp/language/operator_precedence>
+// these precision specifiers are ordered in the ascending order of their precedences
+// here, the higher precedence operators are evaluated first and end up at the bottom of the parse trees
+    CEVAL_PREC_IGNORE, 
+    // {' ', '\t', '\n', '\b', '\r'}
+    CEVAL_PREC_PARANTHESES,
+    // {'(', ')'}
+    CEVAL_PREC_COMMA_OPR,
+    // {','}
+    CEVAL_PREC_LOGICAL_OR_OPR,
+    // {'||'}
+    CEVAL_PREC_LOGICAL_AND_OPR,
+    // {'&&'}
+    CEVAL_PREC_BIT_OR_OPR,
+    // {'|'}
+    CEVAL_PREC_BIT_XOR_OPR,
+    // {'^'}
+    CEVAL_PREC_BIT_AND_OPR,
+    // {'&'}
+    CEVAL_PREC_EQUALITY_OPRS,
+    // {'==', '!='}
+    CEVAL_PREC_RELATIONAL_OPRS,
+    // {'<', '>', '<=', '>='}
+    CEVAL_PREC_BIT_SHIFT_OPRS,
+    // {'<<', '>>'}
+    CEVAL_PREC_ADDITIVE_OPRS,
+    // {'+', '-'}
+    CEVAL_PREC_SIGN_OPRS,
+    // {'+', '-'}
+    CEVAL_PREC_MULTIPLICATIVE_OPRS,
+    // {'*', '/', '%', '//'}
+    CEVAL_PREC_EXPONENTIATION_OPR,
+    // {'**'}
+    CEVAL_PREC_FUNCTIONS,
+    // {
+    //     'exp()', 'sqrt()', 'cbrt()', 'sin()',
+    //     'cos()', 'tan()', 'asin()', 'acos()', 
+    //     'atan()', 'sinh()', 'cosh()', 'tanh()', 
+    //     'abs()', 'ceil()', 'floor()', 'log10()', 
+    //     'ln()', 'deg2rad()', 'rad2deg()', 'signum()',
+    //     'int()', 'frac()', 'fact()', `pow()`, 
+    //     `atan2()`, `gcd()`, `hcf()`, `lcm()`,
+    //     `log()`
+    // }
+    CEVAL_PREC_NOT_OPRS,
+    // {'!', '~'}}
+    CEVAL_PREC_SCI2DEC_OPR,
+    // {'e'},
+    CEVAL_PREC_NUMERIC
+    // {'_pi', '_e', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+} ceval_token_prec_specifiers;
 typedef enum ceval_token_type {
     CEVAL_UNARY_OPERATOR,
     CEVAL_BINARY_OPERATOR,
@@ -47,77 +93,88 @@ typedef struct ceval_token_info_ {
     ceval_token_type token_type;
 } ceval_token_info_; 
 ceval_token_info_ ceval_token_info[] = {
-    { CEVAL_WHITESPACE, " ", 0, CEVAL_OTHER },
-    { CEVAL_WHITESPACE, "\n", 0, CEVAL_OTHER },
-    { CEVAL_WHITESPACE, "\t", 0, CEVAL_OTHER },
-    { CEVAL_WHITESPACE, "\r", 0, CEVAL_OTHER },
-    { CEVAL_WHITESPACE, "\b", 0, CEVAL_OTHER },
-    { CEVAL_OPENPAR, "(", 1, CEVAL_OTHER },
-    { CEVAL_CLOSEPAR, ")", 1, CEVAL_OTHER },
-    { CEVAL_COMMA, ",", 1.5 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_PLUS, "+", 2 , CEVAL_BINARY_OPERATOR }, //PLUS, MINUS are to be looked up before POSSIGN, NEGSIGN
-    { CEVAL_MINUS, "-", 2 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_POSSIGN, "+", 3, CEVAL_UNARY_OPERATOR }, 
-    { CEVAL_NEGSIGN, "-", 3, CEVAL_UNARY_OPERATOR }, 
-    { CEVAL_POW, "**", 4.9 , CEVAL_BINARY_OPERATOR }, // ** before *
-    { CEVAL_TIMES, "*", 4 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_QUOTIENT, "//", 4 , CEVAL_BINARY_OPERATOR }, // '//' before '/'
-    { CEVAL_DIVIDE, "/", 4 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_MODULO, "%", 4 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_ABS, "abs", 5 , CEVAL_UNARY_FUNCTION },
-    { CEVAL_EXP, "exp", 5 , CEVAL_UNARY_FUNCTION }, //exp before e
-    { CEVAL_SQRT, "sqrt", 5 , CEVAL_UNARY_FUNCTION },
-    { CEVAL_CBRT, "cbrt", 5 , CEVAL_UNARY_FUNCTION },
-    { CEVAL_LN, "ln", 5, CEVAL_UNARY_FUNCTION },
-    { CEVAL_LOG10, "log10", 5, CEVAL_UNARY_FUNCTION }, //log10 before log
-    { CEVAL_CEIL, "ceil", 5, CEVAL_UNARY_FUNCTION },
-    { CEVAL_FLOOR, "floor", 5, CEVAL_UNARY_FUNCTION },
-    { CEVAL_POWFUN, "pow", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_ATAN2, "atan2", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_GCD, "gcd", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_HCF, "hcf", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_LCM, "lcm", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_LOG, "log", 5, CEVAL_BINARY_FUNCTION }, 
-    { CEVAL_INT, "int", 5, CEVAL_UNARY_FUNCTION },
-    { CEVAL_FRAC, "frac", 5, CEVAL_UNARY_FUNCTION },
-    { CEVAL_NOTEQUAL, "!=", 1.1 , CEVAL_BINARY_OPERATOR }, //!= before !
-    { CEVAL_FACTORIAL, "fact", 7, CEVAL_UNARY_FUNCTION }, 
-    { CEVAL_SINH, "sinh", 7, CEVAL_UNARY_FUNCTION }, //hyperbolics before trig functions
-    { CEVAL_COSH, "cosh", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_TANH, "tanh", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_SIN, "sin", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_COS, "cos", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_TAN, "tan", 7, CEVAL_UNARY_FUNCTION }, 
-    { CEVAL_ASIN, "asin", 7, CEVAL_UNARY_FUNCTION }, 
-    { CEVAL_ACOS, "acos", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_ATAN, "atan", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_DEG2RAD, "deg2rad", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_RAD2DEG, "rad2deg", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_SIGNUM, "signum", 7, CEVAL_UNARY_FUNCTION },
-    { CEVAL_SCI2DEC, "e", 9 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_LESSER, "<=", 1.2 , CEVAL_BINARY_OPERATOR }, //<= and >= before < and >
-    { CEVAL_GREATER, ">=", 1.2 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_LESSER_S, "<", 1.2 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_GREATER_S, ">", 1.2 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_EQUAL, "==", 1.1 , CEVAL_BINARY_OPERATOR },
-    { CEVAL_AND, "&&", 1.02, CEVAL_BINARY_OPERATOR },
-    { CEVAL_OR, "||", 1.01, CEVAL_BINARY_OPERATOR },
-    { CEVAL_NOT, "!", 5, CEVAL_UNARY_FUNCTION},
-    { CEVAL_BIT_AND, "&", 1.05, CEVAL_BINARY_OPERATOR},
-    { CEVAL_BIT_XOR, "^", 1.04, CEVAL_BINARY_OPERATOR},
-    { CEVAL_BIT_OR, "|", 1.03, CEVAL_BINARY_OPERATOR},
-    { CEVAL_NUMBER, "0", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "1", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "2", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "3", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "4", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "5", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "6", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "7", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "8", 10, CEVAL_OTHER },
-    { CEVAL_NUMBER, "9", 10, CEVAL_OTHER },
-    { CEVAL_CONST_PI, "_pi", 10, CEVAL_OTHER },
-    { CEVAL_CONST_E, "_e", 10, CEVAL_OTHER }
+    { CEVAL_WHITESPACE, " ", CEVAL_PREC_IGNORE, CEVAL_OTHER },
+    { CEVAL_WHITESPACE, "\n", CEVAL_PREC_IGNORE, CEVAL_OTHER },
+    { CEVAL_WHITESPACE, "\t", CEVAL_PREC_IGNORE, CEVAL_OTHER },
+    { CEVAL_WHITESPACE, "\r", CEVAL_PREC_IGNORE, CEVAL_OTHER },
+    { CEVAL_WHITESPACE, "\b", CEVAL_PREC_IGNORE, CEVAL_OTHER },
+
+    { CEVAL_DEG2RAD, "deg2rad", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_RAD2DEG, "rad2deg", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+
+    { CEVAL_SIGNUM, "signum", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+
+    { CEVAL_ATAN2, "atan2", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_LOG10, "log10", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_FLOOR, "floor", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+
+    { CEVAL_SQRT, "sqrt", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
+    { CEVAL_CBRT, "cbrt", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
+    { CEVAL_CEIL, "ceil", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_FRAC, "frac", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_FACTORIAL, "fact", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION }, 
+    { CEVAL_SINH, "sinh", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION }, 
+    { CEVAL_COSH, "cosh", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_TANH, "tanh", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_ASIN, "asin", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION }, 
+    { CEVAL_ACOS, "acos", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_ATAN, "atan", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    
+    { CEVAL_POWFUN, "pow", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_GCD, "gcd", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_HCF, "hcf", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_LCM, "lcm", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_LOG, "log", CEVAL_PREC_FUNCTIONS, CEVAL_BINARY_FUNCTION }, 
+    { CEVAL_INT, "int", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_SIN, "sin", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_COS, "cos", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_TAN, "tan", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_ABS, "abs", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
+    { CEVAL_EXP, "exp", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
+    { CEVAL_CONST_PI, "_pi", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+
+    { CEVAL_CONST_E, "_e", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_LN, "ln", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
+    { CEVAL_OR, "||", CEVAL_PREC_LOGICAL_OR_OPR, CEVAL_BINARY_OPERATOR },
+    { CEVAL_AND, "&&", CEVAL_PREC_LOGICAL_AND_OPR, CEVAL_BINARY_OPERATOR },
+    { CEVAL_EQUAL, "==", CEVAL_PREC_EQUALITY_OPRS, CEVAL_BINARY_OPERATOR },
+    { CEVAL_NOTEQUAL, "!=", CEVAL_PREC_EQUALITY_OPRS, CEVAL_BINARY_OPERATOR },
+    { CEVAL_LESSER, "<=", CEVAL_PREC_RELATIONAL_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_GREATER, ">=", CEVAL_PREC_RELATIONAL_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_BIT_LSHIFT, "<<", CEVAL_PREC_BIT_SHIFT_OPRS, CEVAL_BINARY_OPERATOR},
+    { CEVAL_BIT_RSHIFT, ">>", CEVAL_PREC_BIT_SHIFT_OPRS, CEVAL_BINARY_OPERATOR},
+    { CEVAL_QUOTIENT, "//", CEVAL_PREC_MULTIPLICATIVE_OPRS , CEVAL_BINARY_OPERATOR }, 
+    { CEVAL_POW, "**", CEVAL_PREC_EXPONENTIATION_OPR , CEVAL_BINARY_OPERATOR },
+
+    { CEVAL_OPENPAR, "(", CEVAL_PREC_PARANTHESES, CEVAL_OTHER },
+    { CEVAL_CLOSEPAR, ")", CEVAL_PREC_PARANTHESES, CEVAL_OTHER },
+    { CEVAL_COMMA, ",", CEVAL_PREC_COMMA_OPR , CEVAL_BINARY_OPERATOR },
+    { CEVAL_BIT_OR, "|", CEVAL_PREC_BIT_OR_OPR, CEVAL_BINARY_OPERATOR},
+    { CEVAL_BIT_XOR, "^", CEVAL_PREC_BIT_XOR_OPR, CEVAL_BINARY_OPERATOR},
+    { CEVAL_BIT_AND, "&", CEVAL_PREC_BIT_AND_OPR, CEVAL_BINARY_OPERATOR},
+    { CEVAL_LESSER_S, "<", CEVAL_PREC_RELATIONAL_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_GREATER_S, ">", CEVAL_PREC_RELATIONAL_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_PLUS, "+", CEVAL_PREC_ADDITIVE_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_MINUS, "-", CEVAL_PREC_ADDITIVE_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_POSSIGN, "+", CEVAL_PREC_SIGN_OPRS, CEVAL_UNARY_OPERATOR }, 
+    { CEVAL_NEGSIGN, "-", CEVAL_PREC_SIGN_OPRS, CEVAL_UNARY_OPERATOR }, 
+    { CEVAL_TIMES, "*", CEVAL_PREC_MULTIPLICATIVE_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_DIVIDE, "/", CEVAL_PREC_MULTIPLICATIVE_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_MODULO, "%", CEVAL_PREC_MULTIPLICATIVE_OPRS , CEVAL_BINARY_OPERATOR },
+    { CEVAL_NOT, "!", CEVAL_PREC_NOT_OPRS, CEVAL_UNARY_FUNCTION},
+    { CEVAL_BIT_NOT, "~", CEVAL_PREC_NOT_OPRS, CEVAL_UNARY_OPERATOR},
+
+    { CEVAL_SCI2DEC, "e", CEVAL_PREC_SCI2DEC_OPR , CEVAL_BINARY_OPERATOR },
+    { CEVAL_NUMBER, "0", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "1", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "2", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "3", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "4", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "5", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "6", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "7", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "8", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_NUMBER, "9", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
 }; 
 #ifndef CEVAL_TOKEN_TABLE_SIZE
 #define CEVAL_TOKEN_TABLE_SIZE sizeof(ceval_token_info) / sizeof(ceval_token_info[0])
@@ -220,6 +277,7 @@ double ceval_cbrt(double);
 double ceval_ceil(double);
 double ceval_floor(double);
 double ceval_not(double);
+double ceval_bit_not(double);
 
 //double argument function prototypes
 double ceval_sum(double, double, int);
@@ -247,6 +305,8 @@ double ceval_or(double, double, int);
 double ceval_bit_and(double, double, int);
 double ceval_bit_xor(double, double, int);
 double ceval_bit_or(double, double, int);
+double ceval_bit_lshift(double, double, int);
+double ceval_bit_rshift(double, double, int);
 
 //helper function definitions
 void ceval_error(const char * error) {
@@ -278,24 +338,38 @@ double( * single_arg_fun[])(double) = {
     NULL,
     NULL, NULL,
     NULL,
-    ceval_positive_sign, ceval_negative_sign, 
-    NULL, NULL,
+
+    NULL, 
+    NULL,
+    NULL,
+    NULL, 
+    NULL,
+
+    NULL, NULL, 
+    NULL, NULL, NULL, NULL, 
+    NULL, NULL, 
+    NULL, NULL, 
+    NULL, NULL, NULL, NULL, 
+
+    NULL,
+
     NULL, NULL, NULL, NULL,
-    ceval_abs, NULL, ceval_exp, ceval_sqrt, ceval_cbrt, ceval_ln, ceval_log10, ceval_ceil, ceval_floor, NULL, NULL, NULL, NULL, NULL, NULL, ceval_int_part, ceval_frac_part, ceval_factorial,
-    ceval_sin, ceval_cos, ceval_tan, ceval_asin, ceval_acos, ceval_atan, ceval_sinh, ceval_cosh, ceval_tanh,
-    ceval_deg2rad, ceval_rad2deg, 
-    ceval_signum,
-    NULL, NULL, NULL, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
+
+    ceval_abs, ceval_exp, ceval_sqrt, 
+    ceval_cbrt, ceval_ln, ceval_log10, ceval_ceil, 
+    ceval_floor, ceval_signum, ceval_factorial,
+    ceval_int_part, ceval_frac_part, ceval_deg2rad, ceval_rad2deg, 
+    ceval_sin, ceval_cos, ceval_tan, ceval_asin,
+    ceval_acos, ceval_atan, ceval_sinh, ceval_cosh,
+    ceval_tanh,
+
+    ceval_not, ceval_bit_not,
+    ceval_positive_sign, ceval_negative_sign,
+
     NULL,
-    NULL, NULL,
-    ceval_not,
     NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    NULL
 };
 double ceval_signum(double x) {
     return (x == 0) ? 0 :
@@ -403,31 +477,52 @@ double ceval_tanh(double x) {
     return tanh(x);
 }
 double ceval_not(double x) {
-    return !x;
+    if(ceval_frac_part(x) == 0) {
+        return !(int)x;
+    } else {
+        ceval_error("bit_not(): operand must be of integral type");
+    }
 }
-
+double ceval_bit_not(double x) {
+    if(ceval_frac_part(x) == 0) {
+        return ~(int)x;
+    } else {
+        ceval_error("bit_not(): operand must be of integral type");
+    }
+}
 //double argument function definitions
 double( * double_arg_fun[])(double, double, int) = {
     NULL,
     NULL, NULL,
     ceval_comma,
-    NULL, NULL,
+
+    ceval_or,
+    ceval_and,
+    ceval_bit_or,
+    ceval_bit_xor,
+    ceval_bit_and,
+    ceval_are_equal, ceval_not_equal,
+    ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
+    ceval_bit_lshift, ceval_bit_rshift,
     ceval_sum, ceval_diff,
     ceval_prod, ceval_div, ceval_modulus, ceval_quotient,
-    NULL, ceval_power, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ceval_power, ceval_atan2, ceval_gcd, ceval_hcf, ceval_lcm, ceval_log, NULL, NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 
-    NULL, 
-    ceval_sci2dec,
-    ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
-    ceval_are_equal, ceval_not_equal,
-    ceval_and, ceval_or,
+
+    ceval_power, 
+
+    ceval_gcd, ceval_hcf, ceval_lcm, ceval_log,
+    ceval_atan2, ceval_sci2dec, ceval_power,
+
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL,
+
+    NULL, NULL,
+    NULL, NULL,
     NULL,
-    ceval_bit_and,
-    ceval_bit_xor,
-    ceval_bit_or,
     NULL,
-    NULL, 
     NULL
 };
 double ceval_sum(double a, double b, int arg_check) {
@@ -640,6 +735,29 @@ double ceval_bit_or(double x, double y, int arg_check) {
         ceval_error("bit_or(): operands must be of integral type");
     }
 }
+double ceval_bit_lshift(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("bit_lshift(): too few arguments provided");
+        return NAN;
+    }
+    if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
+        return (int)x << (int)y;
+    } else {
+        ceval_error("bit_lshift(): operands must be of integral type");
+    }
+
+}
+double ceval_bit_rshift(double x, double y, int arg_check) {
+    if (arg_check) {
+        ceval_error("bit_rshift(): too few arguments provided");
+        return NAN;
+    }
+    if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
+        return (int)x >> (int)y;
+    } else {
+        ceval_error("bit_rshift(): operands must be of integral type");
+    }
+}
 
 /************************************************************************************/
 void * ceval_make_tree(char * );
@@ -719,7 +837,6 @@ void * ceval_make_tree(char * expression) {
     while (1) {
         ceval_node node;
         char c = * expression++;
-        isRightAssoc = (c == '^' || c == ')') ? 1 : 0;
         if (c == '\0') break;
         int token_found = -1;
         char token[50];
@@ -729,6 +846,7 @@ void * ceval_make_tree(char * expression) {
             len = strlen(token);
             if (!memcmp(expression - 1, token, len)) {
                 token_found = ceval_token_info[i].id;
+                isRightAssoc = ( token_found == CEVAL_POW || token_found == CEVAL_CLOSEPAR ) ? 1 : 0;
                 break;
             }
         }
