@@ -18,14 +18,16 @@ typedef enum ceval_node_id {
     CEVAL_DIVIDE, CEVAL_MODULO, CEVAL_QUOTIENT, CEVAL_POW,
     CEVAL_GCD, CEVAL_HCF, CEVAL_LCM, CEVAL_LOG,
     CEVAL_ATAN2, CEVAL_SCI2DEC, CEVAL_POWFUN, 
+
     CEVAL_ABS, CEVAL_EXP, CEVAL_SQRT,CEVAL_CBRT, 
     CEVAL_LN, CEVAL_LOG10, CEVAL_CEIL, CEVAL_FLOOR, 
     CEVAL_SIGNUM, CEVAL_FACTORIAL, CEVAL_INT, CEVAL_FRAC, 
     CEVAL_DEG2RAD, CEVAL_RAD2DEG, CEVAL_SIN, CEVAL_COS, 
     CEVAL_TAN, CEVAL_ASIN, CEVAL_ACOS, CEVAL_ATAN, 
     CEVAL_SINH, CEVAL_COSH, CEVAL_TANH,CEVAL_NOT, 
-    CEVAL_BIT_NOT,CEVAL_POSSIGN, CEVAL_NEGSIGN, CEVAL_NUMBER,
-    CEVAL_CONST_PI, CEVAL_CONST_E
+    CEVAL_BIT_NOT,CEVAL_POSSIGN, CEVAL_NEGSIGN, 
+    
+    CEVAL_NUMBER, CEVAL_CONST_PI, CEVAL_CONST_E
 } ceval_node_id;
 typedef enum ceval_token_prec_specifiers {
 // precedences :: <https://en.cppreference.com/w/cpp/language/operator_precedence>
@@ -335,41 +337,25 @@ char * ceval_shrink(char * x) {
 }
 //single argument function definitions
 double( * single_arg_fun[])(double) = {
-    NULL,
-    NULL, NULL,
-    NULL,
-
-    NULL, 
-    NULL,
-    NULL,
-    NULL, 
-    NULL,
-
-    NULL, NULL, 
-    NULL, NULL, NULL, NULL, 
-    NULL, NULL, 
-    NULL, NULL, 
-    NULL, NULL, NULL, NULL, 
-
-    NULL,
-
+    // double_arg_fun (first three tokens are whitespace and parantheses)
     NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, 
+    NULL, NULL, NULL, NULL, 
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, 
     NULL, NULL, NULL,
-
-    ceval_abs, ceval_exp, ceval_sqrt, 
-    ceval_cbrt, ceval_ln, ceval_log10, ceval_ceil, 
-    ceval_floor, ceval_signum, ceval_factorial,
-    ceval_int_part, ceval_frac_part, ceval_deg2rad, ceval_rad2deg, 
-    ceval_sin, ceval_cos, ceval_tan, ceval_asin,
-    ceval_acos, ceval_atan, ceval_sinh, ceval_cosh,
-    ceval_tanh,
-
-    ceval_not, ceval_bit_not,
-    ceval_positive_sign, ceval_negative_sign,
-
-    NULL,
-    NULL,
-    NULL
+    // single_arg_fun
+    ceval_abs, ceval_exp, ceval_sqrt, ceval_cbrt,
+    ceval_ln, ceval_log10, ceval_ceil, ceval_floor,
+    ceval_signum, ceval_factorial, ceval_int_part, ceval_frac_part,
+    ceval_deg2rad, ceval_rad2deg, ceval_sin, ceval_cos,
+    ceval_tan, ceval_asin, ceval_acos, ceval_atan,
+    ceval_sinh, ceval_cosh, ceval_tanh, ceval_not,
+    ceval_bit_not, ceval_positive_sign, ceval_negative_sign,
+    // number and constant tokens
+    NULL, NULL, NULL
 };
 double ceval_signum(double x) {
     return (x == 0) ? 0 :
@@ -492,49 +478,52 @@ double ceval_bit_not(double x) {
 }
 //double argument function definitions
 double( * double_arg_fun[])(double, double, int) = {
-    NULL,
-    NULL, NULL,
-    ceval_comma,
-
-    ceval_or,
-    ceval_and,
-    ceval_bit_or,
-    ceval_bit_xor,
-    ceval_bit_and,
-    ceval_are_equal, ceval_not_equal,
-    ceval_lesser, ceval_greater, ceval_lesser_s, ceval_greater_s,
-    ceval_bit_lshift, ceval_bit_rshift,
-    ceval_sum, ceval_diff,
-    ceval_prod, ceval_div, ceval_modulus, ceval_quotient,
-
-    ceval_power, 
-
+    // double_arg_fun (first three tokens are whitespace and parantheses)
+    NULL, NULL, NULL, ceval_comma,
+    ceval_or, ceval_and, ceval_bit_or, ceval_bit_xor,
+    ceval_bit_and, ceval_are_equal, ceval_not_equal, ceval_lesser,
+    ceval_greater, ceval_lesser_s, ceval_greater_s, ceval_bit_lshift,
+    ceval_bit_rshift, ceval_sum, ceval_diff, ceval_prod,
+    ceval_div, ceval_modulus, ceval_quotient, ceval_power, 
     ceval_gcd, ceval_hcf, ceval_lcm, ceval_log,
     ceval_atan2, ceval_sci2dec, ceval_power,
-
+    // single_arg_fun
+    NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL,
-
-    NULL, NULL,
-    NULL, NULL,
-    NULL,
-    NULL,
-    NULL
+    // number and constant tokens
+    NULL, NULL, NULL
 };
 double ceval_sum(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("sum(): function takes two arguments");
+        return NAN;
+    }
     return a + b;
 }
 double ceval_diff(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("diff(): function takes two arguments");
+        return NAN;
+    }
     return a - b;
 }
 double ceval_prod(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("prod(): function takes two arguments");
+        return NAN;
+    }
     return a * b;
 }
 double ceval_div(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("div(): function takes two arguments");
+        return NAN;
+    }
     if (b == 0 && a == 0) {
         ceval_error("0/0 is indeterminate...");
         ceval_error("Continuing evaluation with the assumption 0/0 = 1");
@@ -571,7 +560,7 @@ double ceval_quotient(double a, double b, int arg_check) {
 }
 double ceval_gcd(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("gcd(): too few arguments provided");
+        ceval_error("gcd(): function takes two arguments");
         return NAN;
     }
     double a_f = ceval_frac_part(a),
@@ -587,21 +576,21 @@ double ceval_gcd(double a, double b, int arg_check) {
 }
 double ceval_hcf(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("hcf(): too few arguments provided");
+        ceval_error("hcf(): function takes two arguments");
         return NAN;
     }
     return ceval_gcd(a, b, 0);
 }
 double ceval_lcm(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("lcm(): too few arguments provided");
+        ceval_error("lcm(): function takes two arguments");
         return NAN;
     }
     return a * b / ceval_gcd(a, b, 0);
 }
 double ceval_log(double b, double x, int arg_check) {
     if (arg_check) {
-        ceval_error("log(): too few arguments provided");
+        ceval_error("log(): function takes two arguments");
         return NAN;
     }
     if (b == 0) {
@@ -616,7 +605,7 @@ double ceval_log(double b, double x, int arg_check) {
 }
 double ceval_are_equal(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("==: too few arguments provided");
+        ceval_error("==: function takes two arguments");
         return NAN;
     }
     if (fabs(a - b) <= CEVAL_EPSILON) {
@@ -627,84 +616,84 @@ double ceval_are_equal(double a, double b, int arg_check) {
 }
 double ceval_not_equal(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("!=: too few arguments provided");
+        ceval_error("!=: function takes two arguments");
         return NAN;
     }
     return !ceval_are_equal(a, b, 0);
 }
 double ceval_lesser(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("<=: too few arguments provided");
+        ceval_error("<=: function takes two arguments");
         return NAN;
     }
     return (b - a) >= CEVAL_EPSILON;
 }
 double ceval_greater(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error(">=: too few arguments provided");
+        ceval_error(">=: function takes two arguments");
         return NAN;
     }
     return (a - b) >= CEVAL_EPSILON;
 }
 double ceval_lesser_s(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error("<: too few arguments provided");
+        ceval_error("<: function takes two arguments");
         return NAN;
     }
     return !ceval_greater(a, b, 0);
 }
 double ceval_greater_s(double a, double b, int arg_check) {
     if (arg_check) {
-        ceval_error(">: too few arguments provided");
+        ceval_error(">: function takes two arguments");
         return NAN;
     }
     return !ceval_lesser(a, b, 0);
 }
 double ceval_comma(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error(",: too few arguments provided");
+        ceval_error(",: function takes two arguments");
         return NAN;
     }
     return y;
 }
 double ceval_power(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("pow(): too few arguments provided");
+        ceval_error("pow(): function takes two arguments");
         return NAN;
     }
     return pow(x, y);
 }
 double ceval_atan2(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("atan2(): too few arguments provided");
+        ceval_error("atan2(): function takes two arguments");
         return NAN;
     }
     return atan2(x, y);
 }
 double ceval_sci2dec(double m, double e, int arg_check) {
     if (arg_check) {
-        ceval_error("atan2(): too few arguments provided");
+        ceval_error("atan2(): function takes two arguments");
         return NAN;
     }
     return (double) m * ceval_power(10, e, 0);
 }
 double ceval_and(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("and(): too few arguments provided");
+        ceval_error("and(): function takes two arguments");
         return NAN;
     }
     return (double) x && y;
 }
 double ceval_or(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("or(): too few arguments provided");
+        ceval_error("or(): function takes two arguments");
         return NAN;
     }
     return (double) x || y;
 }
 double ceval_bit_and(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("bit_and(): too few arguments provided");
+        ceval_error("bit_and(): function takes two arguments");
         return NAN;
     }
     if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
@@ -715,7 +704,7 @@ double ceval_bit_and(double x, double y, int arg_check) {
 }
 double ceval_bit_xor(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("bit_xor(): too few arguments provided");
+        ceval_error("bit_xor(): function takes two arguments");
         return NAN;
     }
     if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
@@ -726,7 +715,7 @@ double ceval_bit_xor(double x, double y, int arg_check) {
 }
 double ceval_bit_or(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("bit_or(): too few arguments provided");
+        ceval_error("bit_or(): function takes two arguments");
         return NAN;
     }
     if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
@@ -737,7 +726,7 @@ double ceval_bit_or(double x, double y, int arg_check) {
 }
 double ceval_bit_lshift(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("bit_lshift(): too few arguments provided");
+        ceval_error("bit_lshift(): function takes two arguments");
         return NAN;
     }
     if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
@@ -749,7 +738,7 @@ double ceval_bit_lshift(double x, double y, int arg_check) {
 }
 double ceval_bit_rshift(double x, double y, int arg_check) {
     if (arg_check) {
-        ceval_error("bit_rshift(): too few arguments provided");
+        ceval_error("bit_rshift(): function takes two arguments");
         return NAN;
     }
     if(ceval_frac_part(x) == 0 && ceval_frac_part(y) == 0) {
@@ -852,6 +841,7 @@ void * ceval_make_tree(char * expression) {
         }
         // if token is found
         if (token_found > -1) {
+            //printf("token: %d\n", token_found);
             // check if the token is a binary operator
             if (ceval_is_binary_opr(token_found)) {
                 // a binary operator must be preceded by a number, a numerical constant, a clospar, or a factorial
@@ -924,7 +914,7 @@ void * ceval_make_tree(char * expression) {
 }
 void ceval_print_node(const ceval_node * node, int indent) {
     int i;
-    char number[20];
+    char number[CEVAL_MAX_DIGITS];
     const char * str;
     if (!node) return;
     ceval_print_node(node -> right, indent + 4);
@@ -940,7 +930,7 @@ void ceval_print_node(const ceval_node * node, int indent) {
         putchar(' ');
         putchar(' ');
     }
-    puts(str);
+    printf("%s\n", str);
     ceval_print_node(node -> left, indent + 4);
 }
 void ceval_print_tree(const void * tree) {
@@ -950,7 +940,6 @@ void ceval_print_tree(const void * tree) {
 /***************************************************************************************/
 double ceval_evaluate_tree_(const ceval_node * );
 double ceval_evaluate_tree(const void * );
-
 double ceval_evaluate_tree_(const ceval_node * node) {
     if (!node) 
         return 0;
@@ -959,34 +948,14 @@ double ceval_evaluate_tree_(const ceval_node * node) {
     left = ceval_evaluate_tree_(node -> left);
     right = ceval_evaluate_tree_(node -> right);
     switch (node -> id) {
-
         //unary-right operators/functions (operate on the expression to their right)
-        case CEVAL_NEGSIGN:
-        case CEVAL_POSSIGN:
-        case CEVAL_EXP:
-        case CEVAL_LN:
-        case CEVAL_LOG10:
-        case CEVAL_ABS:
-        case CEVAL_CEIL:
-        case CEVAL_FLOOR:
-        case CEVAL_SQRT:
-        case CEVAL_CBRT:
-        case CEVAL_SIN:
-        case CEVAL_COS:
-        case CEVAL_TAN:
-        case CEVAL_ASIN:
-        case CEVAL_ACOS:
-        case CEVAL_ATAN:
-        case CEVAL_SINH:
-        case CEVAL_COSH:
-        case CEVAL_TANH:
-        case CEVAL_DEG2RAD:
-        case CEVAL_RAD2DEG:
-        case CEVAL_SIGNUM:
-        case CEVAL_INT:
-        case CEVAL_FRAC:
-        case CEVAL_FACTORIAL:
-        case CEVAL_NOT:
+        case CEVAL_ABS: case CEVAL_EXP: case CEVAL_SQRT: case CEVAL_CBRT: 
+        case CEVAL_LN: case CEVAL_LOG10: case CEVAL_CEIL: case CEVAL_FLOOR: 
+        case CEVAL_SIGNUM: case CEVAL_FACTORIAL: case CEVAL_INT: case CEVAL_FRAC: 
+        case CEVAL_DEG2RAD: case CEVAL_RAD2DEG: case CEVAL_SIN: case CEVAL_COS: 
+        case CEVAL_TAN: case CEVAL_ASIN: case CEVAL_ACOS: case CEVAL_ATAN: 
+        case CEVAL_SINH: case CEVAL_COSH: case CEVAL_TANH: case CEVAL_NOT: 
+        case CEVAL_BIT_NOT: case CEVAL_POSSIGN: case CEVAL_NEGSIGN: 
             if (node -> left == NULL) {
                 //operate on right operand
                 return ( * single_arg_fun[node -> id])(right);
@@ -995,32 +964,14 @@ double ceval_evaluate_tree_(const ceval_node * node) {
                 return NAN;
             }
         //binary operators/functions
-        case CEVAL_PLUS:
-        case CEVAL_MINUS:
-        case CEVAL_TIMES:
-        case CEVAL_DIVIDE:
-        case CEVAL_MODULO:
-        case CEVAL_QUOTIENT:
-        case CEVAL_POW:
-        case CEVAL_POWFUN:
-        case CEVAL_ATAN2:
-        case CEVAL_GCD:
-        case CEVAL_HCF:
-        case CEVAL_LCM:
-        case CEVAL_LOG:
-        case CEVAL_LESSER:
-        case CEVAL_LESSER_S:
-        case CEVAL_GREATER:
-        case CEVAL_GREATER_S:
-        case CEVAL_EQUAL:
-        case CEVAL_NOTEQUAL:
-        case CEVAL_COMMA:
-        case CEVAL_SCI2DEC:
-        case CEVAL_AND:
-        case CEVAL_OR:
-        case CEVAL_BIT_AND:
-        case CEVAL_BIT_XOR:
-        case CEVAL_BIT_OR:
+        case CEVAL_COMMA:  
+        case CEVAL_OR:  case CEVAL_AND:  case CEVAL_BIT_OR:  case CEVAL_BIT_XOR: 
+        case CEVAL_BIT_AND:  case CEVAL_EQUAL:  case CEVAL_NOTEQUAL: case CEVAL_LESSER: 
+        case CEVAL_GREATER:  case CEVAL_LESSER_S:  case CEVAL_GREATER_S:  case CEVAL_BIT_LSHIFT:  
+        case CEVAL_BIT_RSHIFT:  case CEVAL_PLUS:  case CEVAL_MINUS:  case CEVAL_TIMES:  
+        case CEVAL_DIVIDE:  case CEVAL_MODULO:  case CEVAL_QUOTIENT:  case CEVAL_POW: 
+        case CEVAL_GCD:  case CEVAL_HCF:  case CEVAL_LCM:  case CEVAL_LOG: 
+        case CEVAL_ATAN2:  case CEVAL_SCI2DEC: case CEVAL_POWFUN:
             if (node -> left == NULL) {
                 return ( * double_arg_fun[node -> id])(left, right, -1);
             } else if (node -> right == NULL) {
@@ -1035,13 +986,12 @@ double ceval_evaluate_tree_(const ceval_node * node) {
 double ceval_evaluate_tree(const void * node) {
     return ceval_evaluate_tree_((ceval_node * ) node);
 }
-/****************************************************************************/
 
+/****************************************************************************/
 // functions accessible from main() 
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
 // - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
-
 double ceval_result(char * expr) {
     void * tree = ceval_make_tree(expr);
     double result = ceval_evaluate_tree(tree);
@@ -1063,7 +1013,6 @@ void ceval_tree(char * expr) {
     ceval_print_tree(tree);
     ceval_delete_tree(tree);
 }
-
 #ifdef CXX
     double ceval_result(std::string expr) {
         return ceval_result((char * ) expr.c_str());
