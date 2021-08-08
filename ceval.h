@@ -8,7 +8,7 @@
 #include<string.h>
 #include<math.h>
 #include<ctype.h>
-/*****************************************************************************************/
+/****************************************** TOKENS ***********************************************/
 typedef enum ceval_node_id {
     CEVAL_WHITESPACE, CEVAL_OPENPAR, CEVAL_CLOSEPAR, CEVAL_COMMA, 
     CEVAL_OR, CEVAL_AND, CEVAL_BIT_OR, CEVAL_BIT_XOR,
@@ -230,8 +230,9 @@ ceval_node;
   #include<iostream>
   #include<string>
 #endif
-/************************************************************************************/
+/***************************************** !TOKENS *******************************************/
 
+/****************************************** FUNCTIONS ******************************************/
 //constant definitions
 const float CEVAL_PI = M_PI;
 const float CEVAL_E = M_E;
@@ -754,7 +755,9 @@ double ceval_bit_rshift(double x, double y, int arg_check) {
     }
 }
 
-/************************************************************************************/
+/**************************************** !FUNCTIONS ********************************************/
+
+/***************************************** PARSE_TREE_CONSTRUCTION *******************************************/
 void * ceval_make_tree(char * );
 ceval_node * ceval_insert_node(ceval_node * , ceval_node, int);
 void ceval_print_tree(const void * );
@@ -942,8 +945,9 @@ void ceval_print_node(const ceval_node * node, int indent) {
 void ceval_print_tree(const void * tree) {
     ceval_print_node((const ceval_node * ) tree, 0);
 }
+/***************************************** !PARSE_TREE_CONSTRUCTION *******************************************/
 
-/***************************************************************************************/
+/***************************************** EVALUATION *******************************************/
 double ceval_evaluate_tree_(const ceval_node * );
 double ceval_evaluate_tree(const void * );
 
@@ -994,8 +998,9 @@ double ceval_evaluate_tree_(const ceval_node * node) {
 double ceval_evaluate_tree(const void * node) {
     return ceval_evaluate_tree_((ceval_node * ) node);
 }
+/***************************************** !EVALUATION *******************************************/
 
-/****************************************************************************/
+/***************************************** MAIN FUNCTIONS *******************************************/
 // functions accessible from main() 
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
@@ -1029,4 +1034,5 @@ void ceval_tree(char * expr) {
         ceval_tree((char * ) expr.c_str());
     }
 #endif
+/***************************************** !MAIN FUNCTIONS *******************************************/
 #endif
