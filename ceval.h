@@ -325,11 +325,17 @@ char * ceval_shrink(char * x) {
     char * y = x;
     int len = 0;
     for (int i = 0; i < strlen(x); i++) {
-        if (x[i] != ' ' || x[i] != '\t') {
+        if(x[i] == ' ' || x[i] == '\n' || x[i] == '\t' || x[i] == '\r') {
+            continue;
+        } else {
+            if(x[i]=='(' && x[i+1]==')') {
+                // empty pairs of parantheses are ignored
+                // simlar to c lang where {} are ignored as empty blocks of code
+                i++;
+                continue;
+            }
             *(y + len) = tolower(x[i]);
             len++;
-        } else {
-            continue;
         }
     }
     y[len] = '\0';
@@ -940,6 +946,7 @@ void ceval_print_tree(const void * tree) {
 /***************************************************************************************/
 double ceval_evaluate_tree_(const ceval_node * );
 double ceval_evaluate_tree(const void * );
+
 double ceval_evaluate_tree_(const ceval_node * node) {
     if (!node) 
         return 0;
@@ -948,6 +955,7 @@ double ceval_evaluate_tree_(const ceval_node * node) {
     left = ceval_evaluate_tree_(node -> left);
     right = ceval_evaluate_tree_(node -> right);
     switch (node -> id) {
+
         //unary-right operators/functions (operate on the expression to their right)
         case CEVAL_ABS: case CEVAL_EXP: case CEVAL_SQRT: case CEVAL_CBRT: 
         case CEVAL_LN: case CEVAL_LOG10: case CEVAL_CEIL: case CEVAL_FLOOR: 
@@ -956,7 +964,7 @@ double ceval_evaluate_tree_(const ceval_node * node) {
         case CEVAL_TAN: case CEVAL_ASIN: case CEVAL_ACOS: case CEVAL_ATAN: 
         case CEVAL_SINH: case CEVAL_COSH: case CEVAL_TANH: case CEVAL_NOT: 
         case CEVAL_BIT_NOT: case CEVAL_POSSIGN: case CEVAL_NEGSIGN: 
-            if (node -> left == NULL) {
+            if (node -> right != NULL) {
                 //operate on right operand
                 return ( * single_arg_fun[node -> id])(right);
             } else {

@@ -21,7 +21,7 @@ A C/C++ header for parsing and evaluation of arithmetic expressions.
 </table>
 
 ## Supported expressions
-Any valid combination of the following operators and functions, with floating point numbers as operands can be parsed by <b>ceval</b>. Parenthesis can be used to override the default operator precedences. 
+Any valid combination of the following operators and functions, with floating point numbers as operands can be parsed by <b>ceval</b>. Parentheses can be used to override the default operator precedences. 
 
 * Arithematic operators
 
@@ -41,6 +41,7 @@ Any valid combination of the following operators and functions, with floating po
 * Pre-defined math constants
 
 `_pi`, `_e`
+
 ...pre-defined constants are prefixed with an underscore
 
 * Logical operators
