@@ -5,7 +5,7 @@
   "main": "ceval.h",
   "repository": {
     "type": "git",
-    "url": "https://github.com/e-t-sudo/ceval-single-header.git"
+    "url": "https://github.com/erstan/ceval-single-header.git"
   },
   "keywords": [
     "c",
@@ -19,7 +19,7 @@
   "author": "Ershad Tantry",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/e-t-sudo/ceval-single-header/issues"
+    "url": "https://github.com/erstan/ceval-single-header/issues"
   },
-  "homepage": "https://github.com/e-t-sudo/ceval-single-header#readme"
+  "homepage": "https://github.com/erstan/ceval-single-header#readme"
 }

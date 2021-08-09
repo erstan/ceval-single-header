@@ -1,7 +1,7 @@
 # ceval
 A C/C++ header for parsing and evaluation of arithmetic expressions.
 
-[README file is almost identical to that of the <a href="https://github.com/e-t-sudo/ceval#readme">ceval</a> library]
+[README file is almost identical to that of the <a href="https://github.com/erstan/ceval#readme">ceval</a> library]
 
 ## Functions accessibe from main()
 <table>
