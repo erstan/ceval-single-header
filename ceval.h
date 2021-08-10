@@ -189,7 +189,7 @@ int ceval_is_binary_opr(ceval_node_id id) {
     }
     return 0;
 }
-int ceval_is_binay_fun(ceval_node_id id) {
+int ceval_is_binary_fun(ceval_node_id id) {
     for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (ceval_token_info[i].id == id && ceval_token_info[i].token_type == CEVAL_BINARY_FUNCTION) {
             return 1;
@@ -203,6 +203,7 @@ const char * ceval_token_symbol(ceval_node_id id) {
             return ceval_token_info[i].symbol;
         }
     }
+return "";
 }
 ceval_node_id ceval_token_id(char * symbol) {
     for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
@@ -210,6 +211,7 @@ ceval_node_id ceval_token_id(char * symbol) {
             return ceval_token_info[i].id;
         }
     }
+return CEVAL_WHITESPACE;
 }
 double ceval_token_prec(ceval_node_id id) {
     for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
@@ -217,14 +219,14 @@ double ceval_token_prec(ceval_node_id id) {
             return ceval_token_info[i].prec;
         }
     }
+return 0;
 }
 typedef struct ceval_node {
     enum ceval_node_id id;
     double pre;
     double number;
     struct ceval_node * left, * right, * parent;
-}
-ceval_node;
+} ceval_node;
 #ifdef __cplusplus
   #define CEVAL_CXX
   #include<iostream>
@@ -318,8 +320,12 @@ void ceval_error(const char * error) {
 double ceval_gcd_binary(int a, int b) {
     if (a == 0 && b == 0)
         return 0;
-    while (b)
-        b ^= a ^= b ^= a %= b;
+    while (b) {
+        a %= b;
+        b ^= a;
+        a ^= b;
+        b ^= a;
+    }
     return a;
 }
 char * ceval_shrink(char * x) {
@@ -470,17 +476,14 @@ double ceval_tanh(double x) {
     return tanh(x);
 }
 double ceval_not(double x) {
-    if(ceval_frac_part(x) == 0) {
-        return !(int)x;
-    } else {
-        ceval_error("bit_not(): operand must be of integral type");
-    }
+    return !x;
 }
 double ceval_bit_not(double x) {
     if(ceval_frac_part(x) == 0) {
         return ~(int)x;
     } else {
         ceval_error("bit_not(): operand must be of integral type");
+        return NAN;
     }
 }
 //double argument function definitions
@@ -543,6 +546,10 @@ double ceval_div(double a, double b, int arg_check) {
     return a / b;
 }
 double ceval_modulus(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("modulo(): function takes two arguments");
+        return NAN;
+    }
     if (b == 0) {
         ceval_error("Division by 0 is not defined...");
         ceval_error("Continuing evaluation with the assumption 1%0 = 0");
@@ -551,6 +558,10 @@ double ceval_modulus(double a, double b, int arg_check) {
     return fmod(a, b);
 }
 double ceval_quotient(double a, double b, int arg_check) {
+    if (arg_check) {
+        ceval_error("quotient(): function takes two arguments");
+        return NAN;
+    }
     //a = b*q + r
     //q = (a - r)/b
     if (b == 0 && a == 0) {
@@ -668,6 +679,10 @@ double ceval_power(double x, double y, int arg_check) {
         ceval_error("pow(): function takes two arguments");
         return NAN;
     }
+    if(x<0 && ceval_frac_part(y)!=0) {
+        ceval_error("pow(): negative numbers can only be raised to integral powers");
+        return NAN;
+    }
     return pow(x, y);
 }
 double ceval_atan2(double x, double y, int arg_check) {
@@ -679,7 +694,7 @@ double ceval_atan2(double x, double y, int arg_check) {
 }
 double ceval_sci2dec(double m, double e, int arg_check) {
     if (arg_check) {
-        ceval_error("atan2(): function takes two arguments");
+        ceval_error("sci2dec(): function takes two arguments");
         return NAN;
     }
     return (double) m * ceval_power(10, e, 0);
@@ -707,6 +722,7 @@ double ceval_bit_and(double x, double y, int arg_check) {
         return (int)x & (int)y;
     } else {
         ceval_error("bit_and(): operands must be of integral type");
+        return NAN;
     }
 }
 double ceval_bit_xor(double x, double y, int arg_check) {
@@ -718,6 +734,7 @@ double ceval_bit_xor(double x, double y, int arg_check) {
         return (int)x ^ (int)y;
     } else {
         ceval_error("bit_xor(): operands must be of integral type");
+        return NAN;
     }
 }
 double ceval_bit_or(double x, double y, int arg_check) {
@@ -729,6 +746,7 @@ double ceval_bit_or(double x, double y, int arg_check) {
         return (int)x | (int)y;
     } else {
         ceval_error("bit_or(): operands must be of integral type");
+        return NAN;
     }
 }
 double ceval_bit_lshift(double x, double y, int arg_check) {
@@ -740,6 +758,7 @@ double ceval_bit_lshift(double x, double y, int arg_check) {
         return (int)x << (int)y;
     } else {
         ceval_error("bit_lshift(): operands must be of integral type");
+        return NAN;
     }
 
 }
@@ -752,9 +771,9 @@ double ceval_bit_rshift(double x, double y, int arg_check) {
         return (int)x >> (int)y;
     } else {
         ceval_error("bit_rshift(): operands must be of integral type");
+        return NAN;
     }
 }
-
 /**************************************** !FUNCTIONS ********************************************/
 
 /***************************************** PARSE_TREE_CONSTRUCTION *******************************************/
@@ -796,7 +815,7 @@ ceval_node * ceval_insert_node(ceval_node * current, ceval_node item, int isRigh
         current = parent_of_openpar;
 
         if (current -> right -> id == CEVAL_COMMA &&
-            ceval_is_binay_fun(current -> id)) {
+            ceval_is_binary_fun(current -> id)) {
             ceval_node * address_of_comma = current -> right;
             parent_of_openpar -> left = address_of_comma -> left;
             address_of_comma -> left -> parent = parent_of_openpar;
@@ -844,7 +863,7 @@ void * ceval_make_tree(char * expression) {
             len = strlen(token);
             if (!memcmp(expression - 1, token, len)) {
                 token_found = ceval_token_info[i].id;
-                isRightAssoc = ( token_found == CEVAL_POW || token_found == CEVAL_CLOSEPAR ) ? 1 : 0;
+                isRightAssoc = (token_found == CEVAL_POW || token_found == CEVAL_CLOSEPAR ) ? 1 : 0;
                 break;
             }
         }
@@ -852,7 +871,7 @@ void * ceval_make_tree(char * expression) {
         if (token_found > -1) {
             //printf("token: %d\n", token_found);
             // check if the token is a binary operator
-            if (ceval_is_binary_opr(token_found)) {
+            if (ceval_is_binary_opr((ceval_node_id)token_found)) {
                 // a binary operator must be preceded by a number, a numerical constant, a clospar, or a factorial
                 if (previous_id == CEVAL_NUMBER ||
                     previous_id == CEVAL_CONST_PI ||
@@ -860,7 +879,7 @@ void * ceval_make_tree(char * expression) {
                     previous_id == CEVAL_CLOSEPAR) {
                     // other tokens (other than CEVAL_NUMBER, CEVAL_CLOSEPAR) are allowed only before '+'s or '-'s
                     expression = expression + (len - 1);
-                    node.id = token_found;
+                    node.id = (ceval_node_id)token_found;
                     node.pre = ceval_token_prec(node.id);
                 } else {
                     // if the operator is not preceded by a number, a numerical constant, a closepar, or a factorial, then check if the 
@@ -901,7 +920,7 @@ void * ceval_make_tree(char * expression) {
             } else {
                 // for any other token
                 expression = expression + (len - 1);
-                node.id = token_found;
+                node.id = (ceval_node_id)token_found;
                 node.pre = ceval_token_prec(node.id);
                 if (node.id == CEVAL_CONST_PI || node.id == CEVAL_CONST_E) {
                     node.number = (node.id == CEVAL_CONST_PI) ? CEVAL_PI : CEVAL_E;
@@ -1005,6 +1024,7 @@ double ceval_evaluate_tree(const void * node) {
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
 // - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
+
 double ceval_result(char * expr) {
     void * tree = ceval_make_tree(expr);
     double result = ceval_evaluate_tree(tree);
@@ -1026,7 +1046,8 @@ void ceval_tree(char * expr) {
     ceval_print_tree(tree);
     ceval_delete_tree(tree);
 }
-#ifdef CXX
+
+#ifdef CEVAL_CXX
     double ceval_result(std::string expr) {
         return ceval_result((char * ) expr.c_str());
     }
