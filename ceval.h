@@ -644,28 +644,28 @@ double ceval_lesser(double a, double b, int arg_check) {
         ceval_error("<=: function takes two arguments");
         return NAN;
     }
-    return (b - a) >= CEVAL_EPSILON;
+    return !ceval_greater_s(a, b, 0);
 }
 double ceval_greater(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error(">=: function takes two arguments");
         return NAN;
     }
-    return (a - b) >= CEVAL_EPSILON;
+    return !ceval_lesser_s(a, b, 0);
 }
 double ceval_lesser_s(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error("<: function takes two arguments");
         return NAN;
     }
-    return !ceval_greater(a, b, 0);
+    return (b - a) >= CEVAL_EPSILON;
 }
 double ceval_greater_s(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error(">: function takes two arguments");
         return NAN;
     }
-    return !ceval_lesser(a, b, 0);
+    return (a - b) >= CEVAL_EPSILON;
 }
 double ceval_comma(double x, double y, int arg_check) {
     if (arg_check) {
