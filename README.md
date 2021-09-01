@@ -254,10 +254,18 @@ In = exit
 ... Program finished with exit code 0
 
 ```
+## Stoic mode
+The inbuilt functions in `ceval` print out error messages to stdout when some syntactical anomaly is encountered during the parsing and evaluation process. To suppress the error messages, define the `CEVAL_STOICAL` macro before including the library in a C/C++ project. In the stoic mode, problematic expressions are evaluated to `nan`. 
+```
+#define CEVAL_STOICAL
+#include<ceval/ceval.h>
+.
+.
+.
+```
 ## Note
 When the `ceval.h` file is included in a C-program, you might require the `-lm` flag to link `math.h`
 
 ```shell
 gcc file.c -lm 
 ```
-
