@@ -183,7 +183,7 @@ ceval_token_info_ ceval_token_info[] = {
 #define CEVAL_TOKEN_TABLE_SIZE sizeof(ceval_token_info) / sizeof(ceval_token_info[0])
 #endif
 int ceval_is_binary_opr(ceval_node_id id) {
-    for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+    for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (ceval_token_info[i].id == id && ceval_token_info[i].token_type == CEVAL_BINARY_OPERATOR) {
             return 1;
         }
@@ -191,7 +191,7 @@ int ceval_is_binary_opr(ceval_node_id id) {
     return 0;
 }
 int ceval_is_binary_fun(ceval_node_id id) {
-    for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+    for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (ceval_token_info[i].id == id && ceval_token_info[i].token_type == CEVAL_BINARY_FUNCTION) {
             return 1;
         }
@@ -199,7 +199,7 @@ int ceval_is_binary_fun(ceval_node_id id) {
     return 0;
 }
 const char * ceval_token_symbol(ceval_node_id id) {
-    for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+    for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (id == ceval_token_info[i].id) {
             return ceval_token_info[i].symbol;
         }
@@ -207,7 +207,7 @@ const char * ceval_token_symbol(ceval_node_id id) {
 return "";
 }
 ceval_node_id ceval_token_id(char * symbol) {
-    for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+    for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (!strcmp(ceval_token_info[i].symbol, symbol)) {
             return ceval_token_info[i].id;
         }
@@ -215,7 +215,7 @@ ceval_node_id ceval_token_id(char * symbol) {
 return CEVAL_WHITESPACE;
 }
 double ceval_token_prec(ceval_node_id id) {
-    for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+    for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
         if (id == ceval_token_info[i].id) {
             return ceval_token_info[i].prec;
         }
@@ -227,7 +227,8 @@ typedef struct ceval_node {
     double pre;
     double number;
     struct ceval_node * left, * right, * parent;
-} ceval_node;
+}
+ceval_node;
 #ifdef __cplusplus
   #define CEVAL_CXX
   #include<iostream>
@@ -239,6 +240,17 @@ typedef struct ceval_node {
 //constant definitions
 const float CEVAL_PI = M_PI;
 const float CEVAL_E = M_E;
+#ifdef M_PI
+#define CEVAL_PI M_PI
+#else
+#define CEVAL_PI 3.14159265358979323846
+#endif
+#ifdef M_E
+#define CEVAL_E M_E
+#else
+#define CEVAL_E 2.71828182845904523536
+#endif
+
 #ifndef CEVAL_EPSILON
 #define CEVAL_EPSILON 1e-2
 #endif
@@ -339,8 +351,8 @@ double ceval_gcd_binary(int a, int b) {
 }
 char * ceval_shrink(char * x) {
     char * y = x;
-    int len = 0;
-    for (int i = 0; i < strlen(x); i++) {
+    unsigned int len = 0;
+    for (unsigned int i = 0; i < strlen(x); i++) {
         if(x[i] == ' ' || x[i] == '\n' || x[i] == '\t' || x[i] == '\r') {
             continue;
         } else {
@@ -485,7 +497,7 @@ double ceval_tanh(double x) {
     return tanh(x);
 }
 double ceval_not(double x) {
-    return !x;
+    return (double) ! (int)x;
 }
 double ceval_bit_not(double x) {
     if(ceval_frac_part(x) == 0) {
@@ -592,8 +604,8 @@ double ceval_gcd(double a, double b, int arg_check) {
     }
     double a_f = ceval_frac_part(a),
         b_f = ceval_frac_part(b);
-    int a_i = ceval_int_part(a),
-        b_i = ceval_int_part(b);
+    int a_i = (int)ceval_int_part(a),
+        b_i = (int)ceval_int_part(b);
     if (a_f == 0 && b_f == 0) {
         return (double) ceval_gcd_binary(a_i, b_i);
     } else {
@@ -646,21 +658,21 @@ double ceval_not_equal(double a, double b, int arg_check) {
         ceval_error("!=: function takes two arguments");
         return NAN;
     }
-    return !ceval_are_equal(a, b, 0);
+    return (double)!(int)ceval_are_equal(a, b, 0);
 }
 double ceval_lesser(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error("<=: function takes two arguments");
         return NAN;
     }
-    return !ceval_greater_s(a, b, 0);
+    return (double)!(int)ceval_greater_s(a, b, 0);
 }
 double ceval_greater(double a, double b, int arg_check) {
     if (arg_check) {
         ceval_error(">=: function takes two arguments");
         return NAN;
     }
-    return !ceval_lesser_s(a, b, 0);
+    return (double)!(int)ceval_lesser_s(a, b, 0);
 }
 double ceval_lesser_s(double a, double b, int arg_check) {
     if (arg_check) {
@@ -713,14 +725,14 @@ double ceval_and(double x, double y, int arg_check) {
         ceval_error("and(): function takes two arguments");
         return NAN;
     }
-    return (double) x && y;
+    return (double) ((int)x && (int)y);
 }
 double ceval_or(double x, double y, int arg_check) {
     if (arg_check) {
         ceval_error("or(): function takes two arguments");
         return NAN;
     }
-    return (double) x || y;
+    return (double) ((int)x || (int)y);
 }
 double ceval_bit_and(double x, double y, int arg_check) {
     if (arg_check) {
@@ -866,10 +878,10 @@ void * ceval_make_tree(char * expression) {
         if (c == '\0') break;
         int token_found = -1;
         char token[50];
-        int len;
-        for (int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
+        unsigned int len = 0;
+        for(unsigned int i = 0; i < CEVAL_TOKEN_TABLE_SIZE; i++) {
             strcpy(token, ceval_token_info[i].symbol);
-            len = strlen(token);
+            len = (unsigned int) strlen(token);
             if (!memcmp(expression - 1, token, len)) {
                 token_found = ceval_token_info[i].id;
                 isRightAssoc = (token_found == CEVAL_POW || token_found == CEVAL_CLOSEPAR ) ? 1 : 0;
@@ -909,12 +921,13 @@ void * ceval_make_tree(char * expression) {
             } else if (token_found == CEVAL_NUMBER){
                 // if the token is a number, then store it in an array
                 node.pre = ceval_token_prec(CEVAL_NUMBER);
-                int i;
+                unsigned int i;
                 char number[CEVAL_MAX_DIGITS];
                 for (i = 0; i + 1 < sizeof(number);) {
                     number[i++] = c;
                     c = * expression;
-                    if ('0' <= c && c <= '9' || c == '.')
+                    if (('0' <= c && c <= '9') || 
+                                          c == '.')
                         expression++;
                     else 
                         break;
