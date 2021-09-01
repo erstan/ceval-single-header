@@ -8,6 +8,7 @@
 #include<string.h>
 #include<math.h>
 #include<ctype.h>
+#include<stdarg.h>
 /****************************************** TOKENS ***********************************************/
 typedef enum ceval_node_id {
     CEVAL_WHITESPACE, CEVAL_OPENPAR, CEVAL_CLOSEPAR, CEVAL_COMMA, 
@@ -250,7 +251,7 @@ const float CEVAL_E = M_E;
 //these can be defined by the user before the include directive depending the desired level of precision
 
 //helper function prototypes
-void ceval_error(const char * );
+void ceval_error(const char * , ...);
 double ceval_gcd_binary(int, int);
 char * ceval_shrink(char * );
 
@@ -314,8 +315,16 @@ double ceval_bit_lshift(double, double, int);
 double ceval_bit_rshift(double, double, int);
 
 //helper function definitions
-void ceval_error(const char * error) {
-    if (strcmp(error, "")) printf("\n[ceval]: %s\n", error);
+void ceval_error(const char* error_format_string, ...) {
+    #ifndef CEVAL_STOICAL
+        // start whining
+        printf("\n[ceval]: ");
+        va_list args;
+        va_start(args, error_format_string);
+        vprintf(error_format_string, args);
+        va_end(args);
+        printf("\n");
+    #endif
 }
 double ceval_gcd_binary(int a, int b) {
     if (a == 0 && b == 0)
@@ -418,8 +427,8 @@ double ceval_deg2rad(double x) {
     return x / 180 * CEVAL_PI;
 }
 double ceval_int_part(double x) {
-    double x_i, x_f;
-    x_f = modf(x, & x_i);
+    double x_i;
+    modf(x, & x_i);
     return x_i;
 }
 double ceval_frac_part(double x) {
@@ -869,7 +878,6 @@ void * ceval_make_tree(char * expression) {
         }
         // if token is found
         if (token_found > -1) {
-            //printf("token: %d\n", token_found);
             // check if the token is a binary operator
             if (ceval_is_binary_opr((ceval_node_id)token_found)) {
                 // a binary operator must be preceded by a number, a numerical constant, a clospar, or a factorial
@@ -892,7 +900,9 @@ void * ceval_make_tree(char * expression) {
                         node.pre = ceval_token_prec(node.id);
                     } else {
                         // if it is not a sign, then it must be a misplaced character
-                        printf("[ceval]: Misplaced '%c' sign\n", c);
+                        ceval_error("Misplaced '%c'.", c);
+                        ceval_delete_tree(root.right);
+                        root.right = NULL;
                         return NULL;
                     }
                 }
@@ -928,10 +938,10 @@ void * ceval_make_tree(char * expression) {
             }
         } else {
             // if the token is not found in the token table
-            printf("[ceval]: Unknown token '%c'.\n", c);
+            ceval_error("Unknown token '%c'.", c);
             ceval_delete_tree(root.right);
             root.right = NULL;
-            break;
+            return NULL;
         }
         END: ;
         previous_id = node.id;
@@ -1015,7 +1025,8 @@ double ceval_evaluate_tree_(const ceval_node * node) {
     }
 }
 double ceval_evaluate_tree(const void * node) {
-    return ceval_evaluate_tree_((ceval_node * ) node);
+    return (node == NULL)? NAN :
+            ceval_evaluate_tree_((ceval_node * ) node);
 }
 /***************************************** !EVALUATION *******************************************/
 
@@ -1024,25 +1035,16 @@ double ceval_evaluate_tree(const void * node) {
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
 // - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
+// - define CEVAL_STOICAL before the #include directive to use the parser/evaluator in stoical (non-complaining) mode. It suppresses all the error messages from [ceval]. 
 
 double ceval_result(char * expr) {
     void * tree = ceval_make_tree(expr);
     double result = ceval_evaluate_tree(tree);
     ceval_delete_tree(tree);
-    #ifdef CEVAL_ERROR
-        printf("Error encountered\n");
-        #undef CEVAL_ERROR
-        return 0;
-    #endif
     return result;
 }
 void ceval_tree(char * expr) {
     void * tree = ceval_make_tree(expr);
-    #ifdef CEVAL_ERROR
-        printf("Error encountered\n");
-        #undef CEVAL_ERROR
-        return;
-    #endif
     ceval_print_tree(tree);
     ceval_delete_tree(tree);
 }
