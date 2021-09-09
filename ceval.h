@@ -1,8 +1,10 @@
 #ifndef CEVAL
 #define CEVAL
-//functions accessible from main() 
+// functions accessible from main() 
 // - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
 // - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
+// - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
+// - define CEVAL_STOICAL before the #include directive to use the parser/evaluator in stoical (non-complaining) mode. It suppresses all the error messages from [ceval]. 
 
 #include<stdio.h>
 #include<string.h>
@@ -18,7 +20,7 @@ typedef enum ceval_node_id {
     CEVAL_BIT_RSHIFT, CEVAL_PLUS, CEVAL_MINUS, CEVAL_TIMES, 
     CEVAL_DIVIDE, CEVAL_MODULO, CEVAL_QUOTIENT, CEVAL_POW,
     CEVAL_GCD, CEVAL_HCF, CEVAL_LCM, CEVAL_LOG,
-    CEVAL_ATAN2, CEVAL_SCI2DEC, CEVAL_POWFUN, 
+    CEVAL_ATAN2, CEVAL_POWFUN, 
 
     CEVAL_ABS, CEVAL_EXP, CEVAL_SQRT,CEVAL_CBRT, 
     CEVAL_LN, CEVAL_LOG10, CEVAL_CEIL, CEVAL_FLOOR, 
@@ -77,10 +79,8 @@ typedef enum ceval_token_prec_specifiers {
     // }
     CEVAL_PREC_NOT_OPRS,
     // {'!', '~'}}
-    CEVAL_PREC_SCI2DEC_OPR,
-    // {'e'},
     CEVAL_PREC_NUMERIC
-    // {'_pi', '_e', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+    // {'pi', 'pi', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 } ceval_token_prec_specifiers;
 typedef enum ceval_token_type {
     CEVAL_UNARY_OPERATOR,
@@ -134,9 +134,8 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_TAN, "tan", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
     { CEVAL_ABS, "abs", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
     { CEVAL_EXP, "exp", CEVAL_PREC_FUNCTIONS , CEVAL_UNARY_FUNCTION },
-    { CEVAL_CONST_PI, "_pi", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
 
-    { CEVAL_CONST_E, "_e", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
+    { CEVAL_CONST_PI, "pi", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
     { CEVAL_LN, "ln", CEVAL_PREC_FUNCTIONS, CEVAL_UNARY_FUNCTION },
     { CEVAL_OR, "||", CEVAL_PREC_LOGICAL_OR_OPR, CEVAL_BINARY_OPERATOR },
     { CEVAL_AND, "&&", CEVAL_PREC_LOGICAL_AND_OPR, CEVAL_BINARY_OPERATOR },
@@ -149,6 +148,7 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_QUOTIENT, "//", CEVAL_PREC_MULTIPLICATIVE_OPRS , CEVAL_BINARY_OPERATOR }, 
     { CEVAL_POW, "**", CEVAL_PREC_EXPONENTIATION_OPR , CEVAL_BINARY_OPERATOR },
 
+    { CEVAL_CONST_E, "e", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
     { CEVAL_OPENPAR, "(", CEVAL_PREC_PARANTHESES, CEVAL_OTHER },
     { CEVAL_CLOSEPAR, ")", CEVAL_PREC_PARANTHESES, CEVAL_OTHER },
     { CEVAL_COMMA, ",", CEVAL_PREC_COMMA_OPR , CEVAL_BINARY_OPERATOR },
@@ -167,7 +167,6 @@ ceval_token_info_ ceval_token_info[] = {
     { CEVAL_NOT, "!", CEVAL_PREC_NOT_OPRS, CEVAL_UNARY_FUNCTION},
     { CEVAL_BIT_NOT, "~", CEVAL_PREC_NOT_OPRS, CEVAL_UNARY_OPERATOR},
 
-    { CEVAL_SCI2DEC, "e", CEVAL_PREC_SCI2DEC_OPR , CEVAL_BINARY_OPERATOR },
     { CEVAL_NUMBER, "0", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
     { CEVAL_NUMBER, "1", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
     { CEVAL_NUMBER, "2", CEVAL_PREC_NUMERIC, CEVAL_OTHER },
@@ -315,7 +314,6 @@ double ceval_greater_s(double, double, int);
 double ceval_comma(double, double, int);
 double ceval_power(double, double, int);
 double ceval_atan2(double, double, int);
-double ceval_sci2dec(double, double, int);
 double ceval_and(double, double, int);
 double ceval_or(double, double, int);
 double ceval_bit_and(double, double, int);
@@ -377,7 +375,7 @@ double( * single_arg_fun[])(double) = {
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, 
-    NULL, NULL, NULL,
+    NULL, NULL,
     // single_arg_fun
     ceval_abs, ceval_exp, ceval_sqrt, ceval_cbrt,
     ceval_ln, ceval_log10, ceval_ceil, ceval_floor,
@@ -515,7 +513,7 @@ double( * double_arg_fun[])(double, double, int) = {
     ceval_bit_rshift, ceval_sum, ceval_diff, ceval_prod,
     ceval_div, ceval_modulus, ceval_quotient, ceval_power, 
     ceval_gcd, ceval_hcf, ceval_lcm, ceval_log,
-    ceval_atan2, ceval_sci2dec, ceval_power,
+    ceval_atan2, ceval_power,
     // single_arg_fun
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL,
@@ -710,13 +708,6 @@ double ceval_atan2(double x, double y, int arg_check) {
         return NAN;
     }
     return atan2(x, y);
-}
-double ceval_sci2dec(double m, double e, int arg_check) {
-    if (arg_check) {
-        ceval_error("sci2dec(): function takes two arguments");
-        return NAN;
-    }
-    return (double) m * ceval_power(10, e, 0);
 }
 double ceval_and(double x, double y, int arg_check) {
     if (arg_check) {
@@ -921,13 +912,21 @@ void * ceval_make_tree(char * expression) {
                 node.pre = ceval_token_prec(CEVAL_NUMBER);
                 unsigned int i;
                 char number[CEVAL_MAX_DIGITS];
-                for (i = 0; i + 1 < sizeof(number);) {
-                    number[i++] = c;
+                number[0] = c;
+                for (i = 1; i + 1 < sizeof(number);) {
                     c = * expression;
+                    number[i++] = c;
                     if (('0' <= c && c <= '9') || 
-                                          c == '.')
-                        expression++;
-                    else 
+                                          c == '.' ||
+                                            c == 'e') {
+                        if (c == 'e' && *(expression+1)=='-') {
+                            number[i++] = *(expression + 1);
+                            expression += 2;
+                        } else {
+                            expression++;
+                        }
+                    }
+                    else
                         break;
                 }
                 number[i] = '\0';
@@ -1023,7 +1022,7 @@ double ceval_evaluate_tree_(const ceval_node * node) {
         case CEVAL_BIT_RSHIFT:  case CEVAL_PLUS:  case CEVAL_MINUS:  case CEVAL_TIMES:  
         case CEVAL_DIVIDE:  case CEVAL_MODULO:  case CEVAL_QUOTIENT:  case CEVAL_POW: 
         case CEVAL_GCD:  case CEVAL_HCF:  case CEVAL_LCM:  case CEVAL_LOG: 
-        case CEVAL_ATAN2:  case CEVAL_SCI2DEC: case CEVAL_POWFUN:
+        case CEVAL_ATAN2: case CEVAL_POWFUN:
             if (node -> left == NULL) {
                 return ( * double_arg_fun[node -> id])(left, right, -1);
             } else if (node -> right == NULL) {
@@ -1042,12 +1041,6 @@ double ceval_evaluate_tree(const void * node) {
 /***************************************** !EVALUATION *******************************************/
 
 /***************************************** MAIN FUNCTIONS *******************************************/
-// functions accessible from main() 
-// - double ceval_result(char * inp) returns the result of valid math expression stored as a char array `inp`
-// - void ceval_tree(char * inp) prints the parse tree for the input expression `inp`
-// - define CEVAL_EPSILON (default value : 1e-2), CEVAL_DELTA (default value : 1e-6) and CEVAL_MAX_DIGITS (default value : 15) manually before the include directive
-// - define CEVAL_STOICAL before the #include directive to use the parser/evaluator in stoical (non-complaining) mode. It suppresses all the error messages from [ceval]. 
-
 double ceval_result(char * expr) {
     void * tree = ceval_make_tree(expr);
     double result = ceval_evaluate_tree(tree);
