@@ -1070,10 +1070,10 @@ void ceval_tree(char * expr) {
     void ceval_tree(std::string);
 
     double ceval_result(std::string expr) {
-        return ceval_result((const char * ) expr.c_str());
+        return ceval_result((char * ) expr.c_str());
     }
     void ceval_tree(std::string expr) {
-        ceval_tree((const char * ) expr.c_str());
+        ceval_tree((char * ) expr.c_str());
     }
 #endif
 /***************************************** !MAIN FUNCTIONS *******************************************/
