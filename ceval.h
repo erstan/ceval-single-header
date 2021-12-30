@@ -500,7 +500,7 @@ double ceval_tanh(double x) {
     return tanh(x);
 }
 double ceval_not(double x) {
-    return (double) ! (int)x;
+    return ceval_are_equal(x, 0, 0);
 }
 double ceval_bit_not(double x) {
     if(ceval_frac_part(x) == 0) {
@@ -880,7 +880,10 @@ void * ceval_make_tree(char * expression) {
             len = (unsigned int) strlen(token);
             if (!memcmp(expression - 1, token, len)) {
                 token_found = (int)ceval_token_info[i].id;
-                isRightAssoc = (token_found == CEVAL_POW || token_found == CEVAL_CLOSEPAR ) ? 1 : 0;
+                isRightAssoc = (token_found == CEVAL_POW ||
+				token_found == CEVAL_CLOSEPAR ||
+				token_found == CEVAL_NOT ||
+				token_found == CEVAL_BIT_NOT) ? 1 : 0;
                 break;
             }
         }
@@ -926,7 +929,8 @@ void * ceval_make_tree(char * expression) {
                     if (('0' <= c && c <= '9') || 
                                           c == '.' ||
                                             c == 'e') {
-                        if (c == 'e' && *(expression+1)=='-') {
+                        if (c == 'e' && 
+                                (*(expression+1)=='-' || *(expression+1)=='+')) {
                             number[i++] = *(expression + 1);
                             expression += 2;
                         } else {

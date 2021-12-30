@@ -1,6 +1,6 @@
 {
   "name": "ceval",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A single-header C/C++ library for parsing and evaluation of arithmetic expressions",
   "main": "ceval.h",
   "repository": {
